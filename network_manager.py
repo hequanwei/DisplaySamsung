@@ -118,9 +118,22 @@ def scan_usb_tethering_interfaces(wifi_iface: str) -> Dict[str, str]:
     return candidates
 
 
+def get_all_physical_ethernet_interfaces(wifi_iface: str) -> List[str]:
+    """获取系统中所有物理/虚拟以太网接口名称（排除 Wi-Fi 和已知虚拟隧道）"""
+    stats = psutil.net_if_stats()
+    result = []
+    for iface_name, stat in stats.items():
+        if iface_name == wifi_iface or is_ignored_interface(iface_name):
+            continue
+        if stat.isup:
+            result.append(iface_name)
+    return result
+
+
 def detect_usb_tethering_ip(
     timeout: float = USB_DETECT_TIMEOUT,
-    interval: float = USB_DETECT_INTERVAL
+    interval: float = USB_DETECT_INTERVAL,
+    progress_callback=None
 ) -> Tuple[Optional[str], Optional[str]]:
     """
     带轮询机制的 Android USB 网络共享网卡探测
@@ -129,20 +142,42 @@ def detect_usb_tethering_ip(
     """
     wifi_iface = get_wifi_interface_name()
     start_time = time.time()
+    last_log_time = 0
 
     while time.time() - start_time <= timeout:
+        elapsed = int(time.time() - start_time)
+        remaining = max(0, int(timeout - elapsed))
+        
+        if progress_callback:
+            try:
+                progress_callback(remaining)
+            except Exception:
+                pass
+
         candidates = scan_usb_tethering_interfaces(wifi_iface)
         if candidates:
-            # 优先匹配常见的以太网卡命名前缀 en*
+            # 优先匹配带有实际私有局域网 IP 的接口 (192.168.x.x, 172.x.x.x, 10.x.x.x)
             for iface, ip in candidates.items():
-                if iface.startswith("en"):
+                if ip.startswith("192.168.") or ip.startswith("172.") or ip.startswith("10."):
                     logger.info(f"成功识别 Android USB 共享网卡: {iface} -> {ip}")
                     return iface, ip
+
+            # 其次匹配常见的以太网卡命名前缀 en*
+            for iface, ip in candidates.items():
+                if iface.startswith("en"):
+                    logger.info(f"成功识别以太网网卡: {iface} -> {ip}")
+                    return iface, ip
+
             # 否则取第一个候选
             first_iface = next(iter(candidates.keys()))
             return first_iface, candidates[first_iface]
+
+        if time.time() - last_log_time > 3.0:
+            logger.info(f"正在等待 Android USB 网络共享连接... 剩余超时: {remaining}s")
+            last_log_time = time.time()
 
         time.sleep(interval)
 
     logger.warning("在指定时间内未检测到可用的 Android USB 网络共享网卡")
     return None, None
+

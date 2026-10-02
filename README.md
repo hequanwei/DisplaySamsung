@@ -1,107 +1,229 @@
-# DisplaySamsung - macOS Android 平板副屏自动化调度器
+<div align="center">
 
-专为 **Android 平板**（深度优化三星 Galaxy Tab S7+ / S8+ / S9+ / S10 系列等 2800x1752 屏幕）量身打造的 macOS 状态栏副屏自动化调度器。通过 Sunshine / Moonlight 极速串流协议， **120Hz 视网膜高刷、低至 2ms 延迟、支持横竖屏自由旋转** 副屏！
+# 📱 DisplaySamsung
+
+### 将你的三星 / Android 平板，化身为 Mac 的 120Hz 极速视网膜高刷扩展屏！
+
+[![macOS Platform](https://img.shields.io/badge/macOS-Apple_Silicon_%7C_Intel-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/hequanwei/DisplaySamsung)
+[![Android Support](https://img.shields.io/badge/Android-One_UI_5%2B_%7C_Tablets-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/hequanwei/DisplaySamsung)
+[![Release](https://img.shields.io/badge/Release-v2.0.0-blue?style=for-the-badge&logo=github)](https://github.com/hequanwei/DisplaySamsung/releases)
+[![Refresh Rate](https://img.shields.io/badge/Display-120Hz_HiDPI-ff69b4?style=for-the-badge&logo=samsung)](https://github.com/hequanwei/DisplaySamsung)
+[![Latency](https://img.shields.io/badge/Latency-%3C_3ms-success?style=for-the-badge)](https://github.com/hequanwei/DisplaySamsung)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+
+<br />
+
+**DisplaySamsung** 是一款专为 **macOS** 与 **Android 平板**（深度优化三星 Galaxy Tab S7+ / S8+ / S9+ / S10 系列等 2800x1752 顶级 AMOLED 屏）打造的轻量级状态栏自动化调度器。<br/>
+通过内置原生虚拟显示器内核驱动与 Sunshine / Moonlight 极速串流，提供超越苹果原生 Sidecar 的 **120Hz 极致视网膜高刷、低至 2ms 延迟、支持横竖屏即时热切换、Type-C 有线/无线双模直连** 的非凡体验！
+
+<br />
+
+[✨ 核心特性](#-核心特性) •
+[📷 实测预览](#-实测预览) •
+[🆚 方案对比](#-为什么选择-displaysamsung) •
+[🚀 30秒极速上手](#-30秒极速上手-新手-1-2-3) •
+[⚡ Type-C 有线模式](#-type-c-数据线直连极速模式) •
+[🛡️ 防黑屏与滑动锁指南](#-彻底解决平板黑屏与滑动锁问题) •
+[💡 FAQ 避坑指南](#-常见问题与避坑指南-faq)
+
+<br />
+
+</div>
+
+---
+
+## 📷 实测预览
+
+| 🖥️ 120Hz 视网膜高刷原生激活 | 📐 状态栏菜单与横竖屏/排布秒切 |
+| :---: | :---: |
+| <img src="assets/screenshots/display_samsungtab_120hz.png" width="100%" alt="SamsungTab 120Hz 高刷设置"/> | <img src="assets/screenshots/menu_bar_direction.png" width="100%" alt="状态栏菜单与方向布局"/> |
+
+<p align="center">
+  <img src="assets/screenshots/display_main.png" alt="主副屏双屏排布示意" width="90%" />
+  <br />
+  <em>macOS 系统原生扩展识别：主屏 + 三星平板无缝双屏空间排布</em>
+</p>
 
 ---
 
 ## ✨ 核心特性
 
-- 🖥️ **一键状态栏常驻控制**：基于 macOS 原生设计，轻量优雅，无多余 Dock 大图标干扰，一键切换「Wi-Fi 便携模式」、「USB 极速模式」与「停止」。
-- 📐 **平板方向与空间布局自由切换**：
-  - **屏幕朝向**：随时一键切换 **🖥️ 横屏模式 (2800x1752)** 与 **📱 竖屏模式 (1752x2800)**，支持串流中热重载，竖屏看长文档、刷代码、阅读 PDF 绝配！
-  - **排布方位**：支持副屏放置在 Mac 的 **左侧、右侧、上方、下方**，点击秒级生效，实时改变鼠标穿越方向。
-- ⚡ **原生 2800x1752 HiDPI 驱动（免装第三方付费软件）**：
-  - 内置基于 macOS `CGVirtualDisplay` API 编写的轻量原生驱动，直接激活 **120 赫兹** 旗舰高刷与多种 Retina 视网膜清晰度。
-- 🛡️ **优雅退场，彻底杜绝幽灵屏幕**：
-  - 监听停止按钮、退出事件与系统信号（SIGINT/SIGTERM/atexit），退出时 100% 销毁虚拟显示器并释放端口，绝不残留幽灵屏幕。
-- 📦 **免配置 Python，开箱即用**：
-  - 提供了标准的 `.dmg` 拖拽安装镜像包，双击拖拽即可安装，全自动无缝托管 Sunshine 环境。
+- ⚡ **原生 120Hz 满血高刷 & 2800x1752 HiDPI Retina**
+  - 内置基于 macOS 私有 `CGVirtualDisplay` API 编写的原生驱动，直接激活 **120 赫兹** 原生超高刷新率，杜绝 60Hz 拖影，丝滑跟手。
+- 📐 **平板方向与空间布局即时热切换**
+  - **横竖屏一键旋转**：随时在 **🖥️ 横屏 (2800x1752)** 与 **📱 竖屏 (1752x2800)** 之间无缝热切换，看长文档、刷 GitHub、写代码、审阅 PDF 绝配！
+  - **空间排布自由选择**：副屏放置在 Mac 的 **左侧、右侧、上方、下方**，点击秒级生效，实时改变鼠标穿屏方向。
+- 🔌 **双模支持：Type-C 有线极速直连 + Wi-Fi 便携无线**
+  - **Type-C 有线直连**：抗干扰强、延迟逼近 0ms，同时为平板满血供电；
+  - **Wi-Fi 便携模式**：5GHz 局域网下延迟仅 2~4ms，桌面无线无拘无束。
+- 🛡️ **针对三星 One UI 独家优化：防锁屏与常亮卫士**
+  - 彻底破解三星 Game Booster（游戏助推器）在挂机 3 分钟后出现的“触摸保护滑动锁”与黑屏问题，副屏长久保持常亮不中断。
+- 🚫 **100% 杜绝幽灵屏幕残留**
+  - 深度监听退出事件、快捷停止与系统 POSIX 信号，停止即刻完全注销虚拟屏，不留黑屏残影，不干扰主屏分辨率。
+- 📦 **免配 Python 环境，DMG 拖拽开箱即用**
+  - 独立封装为 11MB 超轻量 `.dmg` 安装包，原生驻留 macOS 顶部菜单栏，无任何 Dock 干扰。
 
 ---
 
-## 📷 实测界面预览
+## 🆚 为什么选择 DisplaySamsung？
 
-| 🖥️ 120Hz 视网膜高刷与原生驱动 | 📐 状态栏菜单与方向/布局热切换 |
-| :---: | :---: |
-| ![SamsungTab 120Hz 高刷设置](assets/screenshots/display_samsungtab_120hz.png) | ![状态栏菜单与方向布局](assets/screenshots/menu_bar_direction.png) |
-
-<p align="center">
-  <img src="assets/screenshots/display_main.png" alt="主副屏双屏排布示意" width="85%" />
-  <br />
-  <em>macOS 原生双屏空间无缝扩展与排列示意</em>
-</p>
+| 功能维度 | 📱 **DisplaySamsung** (本方案) | 🍏 Apple 原生 Sidecar | 💸 Duet Display / Yam | 🌐 Deskreen / 网页投屏 |
+| :--- | :---: | :---: | :---: | :---: |
+| **Android / 三星平板支持** | **完美支持 (专属适配)** | ❌ 仅限 iPad | ⚠️ 支持有限 / 需安装繁琐驱动 | ⚠️ 仅浏览器窗口 |
+| **刷新率** | **⚡ 120Hz 满血高刷** | 60Hz (部分 Pro 支持 ProMotion) | 60Hz (120Hz 需昂贵订阅) | 30Hz ~ 60Hz (卡顿明显) |
+| **显示质量** | **2800x1752 原生 HiDPI** | 原生视网膜 | 压缩失真明显 | 网页重压缩，文字发虚 |
+| **横竖屏热切换** | **✅ 状态栏秒切** | 需物理旋转且易卡顿 | 需手动修改分辨率 | ❌ 不支持 |
+| **连接延迟** | **⚡ 2 ~ 4 ms (接近无感)** | ~ 15 ms | 20 ~ 50 ms | > 100 ms |
+| **费用与开源** | **💯 100% 开源免费** | 免费 (但需全套 Apple 硬件) | 每年按期高额收费 | 部分开源 |
 
 ---
 
-## 🚀 极速上手流程 (新手 1-2-3)
+## 🚀 30秒极速上手 (新手 1-2-3)
 
-### 第一步：Mac 端安装 DisplaySamsung
-1. 双击打开项目中的 **`DisplaySamsung-Installer.dmg`**；
-2. 将 **DisplaySamsung** 图标拖入 **Applications** 文件夹；
+### 第一步：Mac 安装 DisplaySamsung
+1. 从 [Releases 页面](https://github.com/hequanwei/DisplaySamsung/releases) 下载最新的 **`DisplaySamsung-Installer.dmg`**；
+2. 双击打开，将 **DisplaySamsung** 拖入 **Applications**（应用程序）文件夹；
 3. 打开启动台启动应用，屏幕右上角菜单栏将出现 `📱 副屏: 闲置` 图标。
 
 ### 第二步：授予 Mac 屏幕录制权限（仅需 1 次）
 > [!IMPORTANT]
-> **必须授权，否则画面无法捕获推流（会黑屏）！**
-> 打开 Mac **【系统设置】 -> 【隐私与安全性】 -> 【屏幕与系统音频录制】**，确保 **`Sunshine.app`**（以及终端或 Python）开关处于 **开启（蓝色）** 状态。
+> **必须授权，否则画面无法被 Sunshine 捕获推流（会黑屏）！**
+> 打开 Mac **【系统设置】 -> 【隐私与安全性】 -> 【屏幕与系统音频录制】**，确保 **`Sunshine.app`**（以及 DisplaySamsung）开关处于 **开启（蓝色）** 状态。
 
-### 第三步：平板连接与首次配对（仅需 1 次，10 秒搞定）
-1. **平板端**：安装开源免费的 **[Moonlight Game Streaming](https://moonlight-stream.org/)**（各大应用市场或官网均可直接下载）。
-2. **Mac 端启动**：点击菜单栏图标，选择 **「启动 (Wi-Fi 便携模式)」**（此时会显示当前 Mac 局域网 IP，例如 `192.168.3.254`）。
-3. **配对连接**：
-   - 平板打开 Moonlight，点击搜索到的 Mac（或手动输入 Mac IP）；
-   - 平板屏幕上会弹出一个 **4 位数字 PIN 码**；
+### 第三步：平板配对连接（仅需首次配对，10 秒搞定）
+1. **平板端**：从应用市场或官网下载免费开源的 **[Moonlight Game Streaming](https://moonlight-stream.org/)**；
+2. **Mac 端启动**：点击菜单栏图标，选择 **「启动 (Wi-Fi 便携模式)」** 或 **「启动 (USB 极速模式)」**；
+3. **配对**：
+   - 打开平板端 Moonlight，点击已搜索到的 Mac 图标（或点击右上角手动输入 Mac IP）；
+   - 平板屏幕上将出现一个 **4 位数字 PIN 码**；
    - 点击 Mac 菜单栏中的 **「打开 Sunshine 控制台」**，在网页顶部点击 **「PIN」**，输入这 4 位数字并确认，配对即永久完成！
-4. **畅享副屏**：平板端点击 **Desktop** 桌面图标，即可进入超清 120Hz 独立副屏！
+4. **连接**：平板端点击 **Desktop** 桌面图标，立刻进入 120Hz 极致副屏！
 
 ---
 
-## 💡 初次使用高频问题与避坑复盘 (FAQ)
+## ⚡ Type-C 数据线直连极速模式
 
-### Q1：为什么连接后平板屏幕上只有壁纸，看不到打开的软件？
+若你在高铁、差旅中没有稳定 Wi-Fi，或追求极致的抗干扰与 0ms 零延迟，可使用 Type-C 数据线直连：
+
+1. **连接数据线**：使用支持高速数据传输的 Type-C 线连接 Mac 与三星平板；
+2. **开启平板 USB 网络共享**：
+   - 进入三星平板 **【设置】->【连接】->【移动热点和网络共享】**；
+   - 开启 **【USB 网络共享】** 开关（注意：必须插线后该开关才允许开启）；
+3. **Mac 启动**：点击 Mac 菜单栏 **「启动 (USB 极速模式)」**，调度器将在 15 秒内自动识别专用以太网网卡与直连 IP（通常为 `192.168.42.x`）；
+4. **平板连接**：平板 Moonlight 中添加该 IP 并连接，畅享稳定无损的满血体验！
+
+---
+
+## 🛡️ 彻底解决平板黑屏与滑动锁问题
+
+> [!TIP]
+> **现象**：副屏使用 3 分钟后，平板屏幕变暗并显示一个“锁头”图标，提示需要手动拖动锁按钮解锁。
+
+### 为什么会出现这个问题？
+这是由于三星 One UI 系统的 **游戏助推器（Game Booster）** 默认将 Moonlight 判定为游戏应用。当副屏由 Mac 键鼠操作时，平板表面没有任何手指触碰，三星游戏助推器判定为“挂机”，从而自动激活了 **「触摸保护锁（Touch Protection）」** 并调暗屏幕。
+
+### 彻底根治方案（任选一种，推荐方案一）：
+
+#### ★ 方案一：关闭游戏助推器触摸保护（永久根治，10秒搞定！）
+1. 平板打开 Moonlight 进入副屏界面；
+2. 从平板屏幕右侧或底部边缘向内滑动，唤出系统导航栏；
+3. 点击角落出现的 **🎮 游戏助推器** 图标；
+4. 点击右上角 **⚙️ 齿轮（设置）**；
+5. 找到 **【触摸保护超时】**，将其更改为 **【从不】**；
+6. 同时将 **【自动屏幕锁定】** 开关关闭。
+
+#### ★ 方案二：开启平板“充电时保持屏幕常亮”
+1. 进入平板 **【系统设置】->【开发者选项】**；
+2. 开启 **【不锁定屏幕（充电时屏幕不休眠）】**；
+3. 当使用 Type-C 线直连 Mac 时，平板始终处于供电状态，屏幕将永不息屏、永不锁屏！
+
+#### ★ 方案三：Moonlight 防休眠开关
+在平板 Moonlight 主页右上角点击 **⚙️ 设置** -> 勾选 **【Keep display awake】（保持屏幕常亮）**。
+
+---
+
+## 💡 常见问题与避坑指南 (FAQ)
+
+<details>
+<summary><b>Q1：为什么连接后平板屏幕上只有壁纸，看不到 Mac 上打开的软件？</b></summary>
+
 * **这是 macOS 的标准“扩展副屏”机制**：
-  * 副屏生成后是一块**全新干净的独立桌面**，默认不会堆放主屏幕现存的窗口；
-  * **操作方式**：将鼠标光标往 Mac 屏幕右侧一直滑动，光标就会滑入平板；把 Mac 主屏幕上的任意窗口（如浏览器、文档等）**向右侧边框拖拽**，窗口就会顺滑滑入平板屏幕中！
+  * 副屏生成后是一块**全新干净的独立工作区**，默认不会堆放主屏幕现存的窗口；
+  * **操作方式**：将鼠标光标往 Mac 屏幕右侧（或你在菜单中设置的方向）一直滑动，光标就会顺滑滑入平板；把 Mac 主屏幕上的任意窗口（如浏览器、代码编辑器、文档）**往边框拖拽**，窗口就会进入平板屏幕中！
+</details>
 
-### Q2：平板隔几分钟就会自动休眠锁屏？
-* **原因**：Android 系统的默认锁屏超时机制。
-* **解决方法**：
-  * 平板退出当前串流回到 Moonlight 主页，点击右上角 **⚙️ 设置（Settings）**；
-  * 找到 **【Keep display awake】（保持屏幕常亮）**，**打勾开启**！开启后只要在串流中，平板屏幕绝不会中途熄灭。
+<details>
+<summary><b>Q2：为什么屏幕分辨率显示 1400x876？</b></summary>
 
-### Q3：为什么屏幕分辨率显示 1400x876？
 * **这是 macOS 经典的 Retina 视网膜双倍点阵渲染机制**：
   * 物理硬件渲染依然是 **2800x1752 满血输出**，但 UI 缩放为 1400x876 逻辑点阵，以确保文字和图标大小最舒适、细腻不费眼。
-  * 若您需要超大工作区点对点：打开 Mac【系统设置】->【显示器】-> 选中【SamsungTab】-> 打开【显示所有分辨率】，即可直接选择 `2800x1752` 原生模式。
+  * 若你需要原生点对点：打开 Mac **【系统设置】->【显示器】** -> 选中 **【SamsungTab】** -> 打开 **【显示所有分辨率】**，即可直接选择 `2800x1752` 原生模式。
+</details>
 
-### Q4：为什么目前建议优先使用 Wi-Fi 模式？
-* **技术真相**：三星 Galaxy Tab（One UI）开启“USB 网络共享”时，默认底层使用的是微软的 **RNDIS 协议**，而 Apple 在较新的 macOS 内核中**完全移除了原生 RNDIS 网卡驱动**，导致 macOS 无法为 USB 共享生成 `en*` 以太网网卡。
-* **体验对比**：现代 5GHz Wi-Fi / Wi-Fi 6 下，局域网串流延迟仅有 **2~4ms**，肉眼完全感知不到延迟，无线无拘束，体验极度丝滑！
+<details>
+<summary><b>Q3：如何切换为竖屏模式？</b></summary>
 
-### Q5：如何将副屏设置为竖屏？
 * 点击菜单栏图标 -> 展开 **「📐 平板方向与布局」** -> 点击 **「📱 竖屏模式 (1752x2800)」**；
-* 调度器会自动重载分辨率，平板画面秒级同步旋转为竖屏！
+* 调度器会自动重载虚拟分辨率，平板画面秒级同步旋转为竖屏！
+</details>
+
+<details>
+<summary><b>Q4：如何保证 120Hz 满血生效？</b></summary>
+
+1. 平板端 Moonlight 设置中：将 **Frame Rate** 设置为 **120 FPS**；
+2. Mac 端：打开系统设置 -> 显示器 -> 选中 SamsungTab，确认刷新率选择为 **120 赫兹**。
+</details>
 
 ---
 
-## 🛠️ 开发者与重新打包指南
+## 🏗️ 架构与技术原理
 
-若您需要修改源码或重新构建 DMG 安装镜像：
+```mermaid
+flowchart LR
+    subgraph macOS["macOS (DisplaySamsung)"]
+        VD["CGVirtualDisplay 原生驱动\n(2800x1752 @ 120Hz HiDPI)"] --> ID["精准 DisplayID 映射"]
+        ID --> SC["Sunshine 硬件串流服务\n(Apple Silicon GPU 极速编码)"]
+        UI["DisplaySamsung 状态栏调度器\n(方向/排布/网络自动路由)"] -.-> VD
+        UI -.-> SC
+    end
+
+    subgraph Channel["传输通道 (低延迟 < 3ms)"]
+        USB["⚡ Type-C 有线直连 (CDC-NCM / 以太网)"]
+        WIFI["📶 Wi-Fi 6 / 5GHz 高速局域网"]
+    end
+
+    subgraph Android["Android 平板 (三星 Galaxy Tab)"]
+        ML["Moonlight 客户端 (原生硬件解码)"]
+        AMOLED["✨ 120Hz 视网膜满血副屏显示\n(防锁屏常亮守护)"]
+        ML --> AMOLED
+    end
+
+    SC === USB ===> ML
+    SC === WIFI ===> ML
+```
+
+---
+
+## 🛠️ 本地开发与重新打包
 
 ```bash
-# 1. 源码本地调试运行
+# 1. 克隆代码仓库
+git clone https://github.com/hequanwei/DisplaySamsung.git
+cd DisplaySamsung
+
+# 2. 源码本地调试运行
 ./run.sh
 
-# 2. 运行全套自动化测试
+# 3. 运行全套自动化测试
 source .venv/bin/activate
 python test_suite.py
 
-# 3. 一键编译并制作全新的 DMG 镜像
+# 4. 一键重新编译打包生成 DMG
 ./build_dmg.sh
 ```
-执行 `./build_dmg.sh` 后，将在 `dist/` 目录下全自动生成全新的 `DisplaySamsung-Installer.dmg`。
 
 ---
 
-## 📄 License
-MIT License. 开源免费，欢迎 Issue 与 PR！
+## 📄 开源许可证
+
+本项目基于 [MIT License](LICENSE) 开源。欢迎 Star、Fork、提交 PR 或 Issue！

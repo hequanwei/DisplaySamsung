@@ -13,6 +13,7 @@ import webbrowser
 import rumps
 
 from config import (
+    APP_VERSION,
     DISPLAY_WIDTH,
     DISPLAY_HEIGHT,
     ENABLE_HIDPI,
@@ -29,6 +30,11 @@ from installer import (
     is_sunshine_installed,
     install_sunshine,
     run_full_diagnostics,
+)
+from android_manager import (
+    get_game_booster_solution_guide,
+    enable_stay_awake,
+    get_connected_android_devices,
 )
 
 # 配置日志记录
@@ -91,6 +97,8 @@ class DisplaySamsungApp(rumps.App):
         self.layout_menu.add(self.pos_bottom_item)
 
         # 工具项
+        self.guide_lock_item = rumps.MenuItem("🛡️ 彻底解决平板黑屏/滑动锁", callback=self.show_game_booster_guide)
+        self.guide_usb_item = rumps.MenuItem("⚡ Type-C 有线直连排障向导", callback=self.show_usb_tethering_guide)
         self.install_item = rumps.MenuItem("🛠️ 一键安装 Sunshine 串流服务端", callback=self.trigger_install_sunshine)
         self.diag_item = rumps.MenuItem("🔍 网络与环境诊断报告", callback=self.show_diagnostics)
         self.webui_item = rumps.MenuItem("打开 Sunshine 控制台", callback=self.open_sunshine_webui)
@@ -104,6 +112,9 @@ class DisplaySamsungApp(rumps.App):
             self.stop_item,
             None,
             self.layout_menu,
+            None,
+            self.guide_lock_item,
+            self.guide_usb_item,
             None,
             self.install_item,
             self.diag_item,
@@ -176,11 +187,12 @@ class DisplaySamsungApp(rumps.App):
         if self.current_mode == "idle":
             sunshine_status = "已安装" if is_sunshine_installed() else "未安装 (请点击菜单一键安装)"
             rumps.alert(
-                title="副屏调度器状态",
-                message=f"当前服务处于闲置状态。\nSunshine 串流服务: {sunshine_status}\n\n请选择「启动 (USB 极速模式)」或「启动 (Wi-Fi 便携模式)」。",
+                title=f"副屏调度器状态 (v{APP_VERSION})",
+                message=f"当前服务处于闲置状态。\n版本: v{APP_VERSION}\nSunshine 串流服务: {sunshine_status}\n\n请选择「启动 (USB 极速模式)」或「启动 (Wi-Fi 便携模式)」。",
             )
         else:
             msg = (
+                f"当前版本: v{APP_VERSION}\n"
                 f"当前模式: {self.current_mode.upper()}\n"
                 f"绑定网卡: {self.current_iface}\n"
                 f"绑定 IP: {self.current_ip}\n"
@@ -189,7 +201,7 @@ class DisplaySamsungApp(rumps.App):
                 f"Display UUID: {self.display_mgr.uuid}\n"
                 f"Sunshine 运行状态: {'正常' if self.sunshine_mgr.is_running else '未运行'}"
             )
-            rumps.alert(title="副屏连接详情", message=msg)
+            rumps.alert(title=f"副屏连接详情 (v{APP_VERSION})", message=msg)
 
     def show_diagnostics(self, _):
         """运行网络与环境自检报告"""
@@ -249,47 +261,101 @@ class DisplaySamsungApp(rumps.App):
         t = threading.Thread(target=worker, daemon=True)
         t.start()
 
+    def show_game_booster_guide(self, _=None):
+        """弹出三星 Game Booster 游戏助推器滑动锁与防黑屏指引"""
+        guide = get_game_booster_solution_guide()
+        adb_ok = False
+        try:
+            adb_ok = enable_stay_awake()
+        except Exception:
+            pass
+
+        extra = "\n\n【ADB 设备与常亮状态】\n" + ("已检测到 USB 连接的 Android 设备，并已自动下发系统常亮指令！" if adb_ok else "当前未检测到 ADB 调试连接（建议按上方步骤在平板系统设置中修改）。")
+        rumps.alert(title="🛡️ 平板防黑屏与滑动锁终极方案", message=guide + extra)
+
+    def show_usb_tethering_guide(self, _=None):
+        """弹出 Type-C 直连排障与使用向导"""
+        msg = (
+            "【Type-C 数据线直连极速副屏指南】\n\n"
+            "有线直连具备更高的抗干扰能力与 0ms 级的即时响应：\n\n"
+            "步骤 1：连接数据线\n"
+            "使用原装或高质量 Type-C 数据线（支持传输数据）连接 Mac 与三星平板。\n\n"
+            "步骤 2：开启平板端 USB 网络共享\n"
+            "进入三星平板【设置】->【连接】->【移动热点和网络共享】-> 开启【USB 网络共享】。\n"
+            "（注意：必须在连接数据线后，该开关才能点击开启！）\n\n"
+            "步骤 3：Mac 点击启动\n"
+            "点击 Mac 菜单栏中的「启动 (USB 极速模式)」，调度器将在 15 秒内自动识别网卡。\n\n"
+            "步骤 4：平板 Moonlight 连接\n"
+            "在平板 Moonlight 中点击右上角添加对应的 IP，即可享受最高带宽有线副屏！"
+        )
+        rumps.alert(title="⚡ Type-C 有线直连向导", message=msg)
+
     def start_usb_mode(self, _):
-        """启动 USB 极速模式"""
+        """启动 USB 极速模式（异步检测，避免主 UI 线程卡顿）"""
+        if self.current_mode != "idle":
+            return
+
         logger.info("用户请求启动 USB 极速模式...")
-        self.title = "🔄 正在识别 USB..."
+        self.title = "⏳ 正在检测 USB..."
 
-        # 1. 轮询检测 Android USB 网络共享网卡
-        iface, ip = detect_usb_tethering_ip()
-        if not iface or not ip:
-            logger.warning("未检测到 Android USB Tethering 共享网卡")
-            self.update_menu_states()
-            rumps.alert(
-                title="未检测到 USB 网络共享",
-                message=(
-                    "未发现由 Android 平板 USB 网络共享生成的虚拟网卡。\n\n"
-                    "排查指南：\n"
-                    "1. 请确认已使用 USB-C 数据线将平板连接到 Mac；\n"
-                    "2. 在 Android 平板中进入：【系统设置】->【连接与共享】-> 开启【USB 网络共享】；\n"
-                    "3. 若平板刚开启，macOS 分配 IP 需等待 2~3 秒，请重新点击本选项；\n"
-                    "4. 若仍未识别，请在菜单中点击「🔍 网络与环境诊断报告」查看当前连接的接口，或直接使用「启动 (Wi-Fi 便携模式)」。"
-                ),
+        def worker():
+            # 1. 尝试检测 ADB 并一键发送屏幕常亮指令
+            try:
+                if enable_stay_awake():
+                    logger.info("已通过 ADB 自动为 Android 平板激活屏幕常亮！")
+            except Exception as e:
+                logger.debug(f"ADB 常亮设置跳过: {e}")
+
+            # 2. 轮询检测 Android USB 网络共享网卡
+            def on_progress(remaining):
+                self.title = f"⏳ 探测 USB ({remaining}s)..."
+
+            iface, ip = detect_usb_tethering_ip(progress_callback=on_progress)
+
+            if not iface or not ip:
+                logger.warning("未检测到 Android USB Tethering 共享网卡")
+                self.update_menu_states()
+                rumps.alert(
+                    title="未检测到 USB 网络共享网卡",
+                    message=(
+                        "未能发现 Android 平板通过 Type-C 数据线共享的网络接口。\n\n"
+                        "💡 常见排查与操作步骤：\n"
+                        "1. 请确认连接的是【支持数据传输】的 Type-C 线（非纯充电线）；\n"
+                        "2. 在三星平板上进入：【设置】->【连接】->【移动热点和网络共享】；\n"
+                        "3. 将【USB 网络共享】开关手动开启（插线后才可点击）；\n"
+                        "4. 开启后重新点击「启动 (USB 极速模式)」即可秒连！\n\n"
+                        "若需详细排查，请点击菜单「⚡ Type-C 直连向导」或使用 Wi-Fi 模式。"
+                    ),
+                )
+                return
+
+            # 3. 检查 Sunshine 是否已安装
+            if not is_sunshine_installed():
+                self.update_menu_states()
+                resp = rumps.alert(
+                    title="尚未安装 Sunshine 服务",
+                    message=(
+                        f"已成功识别到 USB 共享网卡 ({iface} -> {ip})！\n\n"
+                        "但系统中尚未检测到 Sunshine 串流服务端，无法推流给平板。\n"
+                        "是否立即为您一键自动安装 Sunshine？"
+                    ),
+                    ok="一键自动安装并启动",
+                    cancel="取消",
+                )
+                if resp == 1:
+                    self._start_install_thread(then_activate_mode="usb", iface=iface, ip=ip)
+                return
+
+            # 4. 执行副屏与推流调度
+            self._activate_streaming(mode="usb", iface=iface, ip=ip)
+            rumps.notification(
+                title="⚡ Type-C 极速直连已建立！",
+                subtitle=f"绑定网卡: {iface} ({ip})",
+                message="请在平板端 Moonlight 连接该 IP，尽享满血低延迟 120Hz 视网膜副屏！",
             )
-            return
 
-        # 2. 检查 Sunshine 是否已安装
-        if not is_sunshine_installed():
-            resp = rumps.alert(
-                title="尚未安装 Sunshine 服务",
-                message=(
-                    f"已成功识别到 USB 共享网卡 ({iface} -> {ip})！\n\n"
-                    "但系统中尚未检测到 Sunshine 串流服务端，无法推流给平板。\n"
-                    "是否立即为您一键自动安装 Sunshine？"
-                ),
-                ok="一键自动安装并启动",
-                cancel="取消",
-            )
-            if resp == 1:
-                self._start_install_thread(then_activate_mode="usb", iface=iface, ip=ip)
-            return
-
-        # 3. 执行副屏与推流调度
-        self._activate_streaming(mode="usb", iface=iface, ip=ip)
+        t = threading.Thread(target=worker, daemon=True)
+        t.start()
 
     def start_wifi_mode(self, _):
         """启动 Wi-Fi 便携模式"""
