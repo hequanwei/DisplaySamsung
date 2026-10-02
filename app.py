@@ -26,6 +26,12 @@ from network_manager import (
 )
 from display_manager import VirtualDisplayManager
 from sunshine_manager import SunshineManager
+from adb_manager import ADBManager
+from hotspot_manager import (
+    get_hotspot_gateway_ip,
+    open_macos_sharing_settings,
+    get_hotspot_guide,
+)
 from installer import (
     is_sunshine_installed,
     install_sunshine,
@@ -62,9 +68,10 @@ class DisplaySamsungApp(rumps.App):
         # 核心管理器实例
         self.display_mgr = VirtualDisplayManager()
         self.sunshine_mgr = SunshineManager()
+        self.adb_mgr = ADBManager()
 
         # 运行状态
-        self.current_mode: str = "idle"  # 'idle', 'usb', 'wifi'
+        self.current_mode: str = "idle"  # 'idle', 'usb', 'wifi', 'hotspot'
         self.current_ip: str = ""
         self.current_iface: str = ""
         self.is_installing_sunshine: bool = False
@@ -75,8 +82,9 @@ class DisplaySamsungApp(rumps.App):
 
         # 构造菜单结构
         self.status_item = rumps.MenuItem("● 状态: 未连接", callback=self.show_status_details)
-        self.usb_item = rumps.MenuItem("启动 (USB 极速模式)", callback=self.start_usb_mode)
-        self.wifi_item = rumps.MenuItem("启动 (Wi-Fi 便携模式)", callback=self.start_wifi_mode)
+        self.usb_item = rumps.MenuItem("⚡ 启动 (Type-C 有线直连模式)", callback=self.start_usb_mode)
+        self.wifi_item = rumps.MenuItem("📶 启动 (Wi-Fi 局域网模式)", callback=self.start_wifi_mode)
+        self.hotspot_item = rumps.MenuItem("🌐 启动 (Mac 便携热点模式)", callback=self.start_hotspot_mode)
         self.stop_item = rumps.MenuItem("停止副屏与串流", callback=self.stop_service)
         
         # 平板方向与布局子菜单
@@ -98,7 +106,8 @@ class DisplaySamsungApp(rumps.App):
 
         # 工具项
         self.guide_lock_item = rumps.MenuItem("🛡️ 彻底解决平板黑屏/滑动锁", callback=self.show_game_booster_guide)
-        self.guide_usb_item = rumps.MenuItem("⚡ Type-C 有线直连排障向导", callback=self.show_usb_tethering_guide)
+        self.guide_usb_item = rumps.MenuItem("⚡ Type-C 有线直连使用向导", callback=self.show_usb_tethering_guide)
+        self.guide_hotspot_item = rumps.MenuItem("🌐 Mac 便携热点设置向导", callback=self.show_hotspot_guide)
         self.install_item = rumps.MenuItem("🛠️ 一键安装 Sunshine 串流服务端", callback=self.trigger_install_sunshine)
         self.diag_item = rumps.MenuItem("🔍 网络与环境诊断报告", callback=self.show_diagnostics)
         self.webui_item = rumps.MenuItem("打开 Sunshine 控制台", callback=self.open_sunshine_webui)
@@ -109,12 +118,14 @@ class DisplaySamsungApp(rumps.App):
             None,  # 分隔线
             self.usb_item,
             self.wifi_item,
+            self.hotspot_item,
             self.stop_item,
             None,
             self.layout_menu,
             None,
             self.guide_lock_item,
             self.guide_usb_item,
+            self.guide_hotspot_item,
             None,
             self.install_item,
             self.diag_item,
@@ -141,8 +152,13 @@ class DisplaySamsungApp(rumps.App):
         sys.exit(0)
 
     def _cleanup_all(self):
-        """确保 100% 终止 Sunshine 进程并销毁虚拟显示器，防止幽灵屏幕"""
+        """确保 100% 终止 Sunshine 进程、销毁虚拟显示器并注销 ADB 端口映射"""
         logger.info("执行全局资源回收清理...")
+        try:
+            self.adb_mgr.cleanup()
+        except Exception as e:
+            logger.error(f"清理 ADB 映射异常: {e}")
+
         try:
             self.sunshine_mgr.stop()
         except Exception as e:
@@ -168,18 +184,28 @@ class DisplaySamsungApp(rumps.App):
             self.status_item.title = "● 状态: 未连接"
             self.usb_item.set_callback(self.start_usb_mode)
             self.wifi_item.set_callback(self.start_wifi_mode)
+            self.hotspot_item.set_callback(self.start_hotspot_mode)
             self.stop_item.set_callback(None)  # 禁用停止选项
         elif self.current_mode == "usb":
-            self.title = "⚡️ 副屏: USB极速"
-            self.status_item.title = f"● 运行中 [USB]: {self.current_ip} ({self.current_iface})"
+            self.title = "⚡️ 副屏: 有线直连"
+            self.status_item.title = f"● 运行中 [Type-C 有线]: {self.current_ip} (本地映射)"
             self.usb_item.set_callback(None)
             self.wifi_item.set_callback(None)
+            self.hotspot_item.set_callback(None)
             self.stop_item.set_callback(self.stop_service)
         elif self.current_mode == "wifi":
             self.title = "📶 副屏: Wi-Fi"
             self.status_item.title = f"● 运行中 [Wi-Fi]: {self.current_ip} ({self.current_iface})"
             self.usb_item.set_callback(None)
             self.wifi_item.set_callback(None)
+            self.hotspot_item.set_callback(None)
+            self.stop_item.set_callback(self.stop_service)
+        elif self.current_mode == "hotspot":
+            self.title = "🌐 副屏: 便携热点"
+            self.status_item.title = f"● 运行中 [Mac热点]: {self.current_ip} ({self.current_iface})"
+            self.usb_item.set_callback(None)
+            self.wifi_item.set_callback(None)
+            self.hotspot_item.set_callback(None)
             self.stop_item.set_callback(self.stop_service)
 
     def show_status_details(self, _):
@@ -276,86 +302,124 @@ class DisplaySamsungApp(rumps.App):
     def show_usb_tethering_guide(self, _=None):
         """弹出 Type-C 直连排障与使用向导"""
         msg = (
-            "【Type-C 数据线直连极速副屏指南】\n\n"
-            "有线直连具备更高的抗干扰能力与 0ms 级的即时响应：\n\n"
-            "步骤 1：连接数据线\n"
-            "使用原装或高质量 Type-C 数据线（支持传输数据）连接 Mac 与三星平板。\n\n"
-            "步骤 2：开启平板端 USB 网络共享\n"
-            "进入三星平板【设置】->【连接】->【移动热点和网络共享】-> 开启【USB 网络共享】。\n"
-            "（注意：必须在连接数据线后，该开关才能点击开启！）\n\n"
-            "步骤 3：Mac 点击启动\n"
-            "点击 Mac 菜单栏中的「启动 (USB 极速模式)」，调度器将在 15 秒内自动识别网卡。\n\n"
-            "步骤 4：平板 Moonlight 连接\n"
-            "在平板 Moonlight 中点击右上角添加对应的 IP，即可享受最高带宽有线副屏！"
+            "【Type-C 数据线纯有线直连指南 (纯 ADB 映射 / 零 VPN)】\n\n"
+            "有线直连脱机可用，不受 Wi-Fi 信号干扰，延迟逼近 0ms，且绝不影响平板原有的梯子代理！\n\n"
+            "★ 操作步骤（仅需 20 秒）：\n"
+            "1. 连接数据线：使用支持数据传输的 Type-C 线连接 Mac 与三星平板；\n"
+            "2. 开启平板 USB 调试：进入平板【系统设置】->【开发者选项】-> 打开【USB 调试】；\n"
+            "   （若未开启开发者选项：在【系统设置】->【关于平板】->【软件信息】连续点7次【版本号】即可）\n"
+            "3. 平板屏幕授权：平板弹出提示“是否允许 USB 调试”时，勾选【始终允许】并点击【允许】；\n"
+            "4. Mac 启动：点击本应用菜单「⚡ 启动 (Type-C 有线直连模式)」；\n"
+            "5. 平板连接：平板端打开 Moonlight，点击右上角【+】号，输入「127.0.0.1」即可秒级连入 120Hz 极速副屏！"
         )
-        rumps.alert(title="⚡ Type-C 有线直连向导", message=msg)
+        rumps.alert(title="⚡ Type-C 有线直连指南", message=msg)
+
+    def show_hotspot_guide(self, _=None):
+        """弹出 Mac 便携热点指南与系统设置入口"""
+        guide = get_hotspot_guide()
+        resp = rumps.alert(
+            title="🌐 Mac 便携热点设置指南",
+            message=guide,
+            ok="打开 Mac 共享设置面板",
+            cancel="我知道了",
+        )
+        if resp == 1:
+            open_macos_sharing_settings()
 
     def start_usb_mode(self, _):
-        """启动 USB 极速模式（异步检测，避免主 UI 线程卡顿）"""
+        """启动 Type-C 有线直连模式（基于纯 ADB 反向端口映射，免 VPN）"""
         if self.current_mode != "idle":
             return
 
-        logger.info("用户请求启动 USB 极速模式...")
-        self.title = "⏳ 正在检测 USB..."
+        logger.info("用户请求启动 Type-C 有线直连模式...")
+        self.title = "⏳ 正在连接 ADB..."
 
         def worker():
-            # 1. 尝试检测 ADB 并一键发送屏幕常亮指令
-            try:
-                if enable_stay_awake():
-                    logger.info("已通过 ADB 自动为 Android 平板激活屏幕常亮！")
-            except Exception as e:
-                logger.debug(f"ADB 常亮设置跳过: {e}")
-
-            # 2. 轮询检测 Android USB 网络共享网卡
-            def on_progress(remaining):
-                self.title = f"⏳ 探测 USB ({remaining}s)..."
-
-            iface, ip = detect_usb_tethering_ip(progress_callback=on_progress)
-
-            if not iface or not ip:
-                logger.warning("未检测到 Android USB Tethering 共享网卡")
-                self.update_menu_states()
-                rumps.alert(
-                    title="未检测到 USB 网络共享网卡",
-                    message=(
-                        "未能发现 Android 平板通过 Type-C 数据线共享的网络接口。\n\n"
-                        "💡 常见排查与操作步骤：\n"
-                        "1. 请确认连接的是【支持数据传输】的 Type-C 线（非纯充电线）；\n"
-                        "2. 在三星平板上进入：【设置】->【连接】->【移动热点和网络共享】；\n"
-                        "3. 将【USB 网络共享】开关手动开启（插线后才可点击）；\n"
-                        "4. 开启后重新点击「启动 (USB 极速模式)」即可秒连！\n\n"
-                        "若需详细排查，请点击菜单「⚡ Type-C 直连向导」或使用 Wi-Fi 模式。"
-                    ),
-                )
-                return
-
-            # 3. 检查 Sunshine 是否已安装
+            # 1. 检查 Sunshine 是否已安装
             if not is_sunshine_installed():
                 self.update_menu_states()
                 resp = rumps.alert(
                     title="尚未安装 Sunshine 服务",
-                    message=(
-                        f"已成功识别到 USB 共享网卡 ({iface} -> {ip})！\n\n"
-                        "但系统中尚未检测到 Sunshine 串流服务端，无法推流给平板。\n"
-                        "是否立即为您一键自动安装 Sunshine？"
-                    ),
+                    message="系统中尚未检测到 Sunshine 串流服务端，无法推流给平板。\n是否立即为您一键自动安装 Sunshine？",
                     ok="一键自动安装并启动",
                     cancel="取消",
                 )
                 if resp == 1:
-                    self._start_install_thread(then_activate_mode="usb", iface=iface, ip=ip)
+                    self._start_install_thread(then_activate_mode="usb", iface="adb_tunnel", ip="127.0.0.1")
                 return
 
-            # 4. 执行副屏与推流调度
-            self._activate_streaming(mode="usb", iface=iface, ip=ip)
+            # 2. 建立端口映射并自动下发充电防黑屏常亮
+            ok, msg = self.adb_mgr.setup_reverse_forwarding()
+            if not ok:
+                self.update_menu_states()
+                resp = rumps.alert(
+                    title="Type-C 有线连接提示",
+                    message=msg,
+                    ok="查看详细图文指引",
+                    cancel="关闭",
+                )
+                if resp == 1:
+                    self.show_usb_tethering_guide()
+                return
+
+            # 3. 激活虚拟副屏与 Sunshine
+            self._activate_streaming(mode="usb", iface="adb_tunnel", ip="127.0.0.1")
             rumps.notification(
-                title="⚡ Type-C 极速直连已建立！",
-                subtitle=f"绑定网卡: {iface} ({ip})",
-                message="请在平板端 Moonlight 连接该 IP，尽享满血低延迟 120Hz 视网膜副屏！",
+                title="⚡ Type-C 有线直连已建立！",
+                subtitle="本地映射: 127.0.0.1",
+                message="请在平板端 Moonlight 添加并连接 127.0.0.1，尽享 0 延迟 120Hz 极速副屏！",
             )
 
         t = threading.Thread(target=worker, daemon=True)
         t.start()
+
+    def start_hotspot_mode(self, _):
+        """启动 Mac 便携热点模式（脱机免路由器，免疫酒店 AP 隔离）"""
+        if self.current_mode != "idle":
+            return
+
+        logger.info("用户请求启动 Mac 便携热点模式...")
+        self.title = "🔄 探测热点网络..."
+
+        # 1. 检测热点网关 IP
+        iface, ip = get_hotspot_gateway_ip()
+        if not iface or not ip:
+            self.update_menu_states()
+            resp = rumps.alert(
+                title="未检测到活跃的 Mac 便携热点",
+                message=(
+                    "未检测到由 Mac 共享网络生成的便携热点网关。\n\n"
+                    "💡 如何开启：\n"
+                    "1. 请在 Mac【系统设置】->【通用】->【共享】中开启【互联网共享】；\n"
+                    "2. 让三星平板连入 Mac 发射的 Wi-Fi 热点；\n"
+                    "3. 连入后重新点击本选项即可秒连！"
+                ),
+                ok="打开系统共享设置",
+                cancel="取消",
+            )
+            if resp == 1:
+                open_macos_sharing_settings()
+            return
+
+        # 2. 检查 Sunshine 是否已安装
+        if not is_sunshine_installed():
+            resp = rumps.alert(
+                title="尚未安装 Sunshine 服务",
+                message=f"已成功捕获 Mac 便携热点网关 ({iface} -> {ip})！\n但系统中尚未检测到 Sunshine 服务。\n是否立即为您一键自动安装？",
+                ok="一键自动安装并启动",
+                cancel="取消",
+            )
+            if resp == 1:
+                self._start_install_thread(then_activate_mode="hotspot", iface=iface, ip=ip)
+            return
+
+        # 3. 执行副屏与推流调度
+        self._activate_streaming(mode="hotspot", iface=iface, ip=ip)
+        rumps.notification(
+            title="🌐 Mac 便携热点副屏已就绪！",
+            subtitle=f"网关 IP: {ip}",
+            message=f"请在平板 Moonlight 中连接 {ip}，免疫任何弱网与 AP 隔离！",
+        )
 
     def start_wifi_mode(self, _):
         """启动 Wi-Fi 便携模式"""

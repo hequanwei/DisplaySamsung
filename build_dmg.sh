@@ -67,6 +67,7 @@ pyinstaller \
     --name "DisplaySamsung" \
     --icon "assets/app.icns" \
     --add-binary "tools/virtual_display:tools" \
+    --add-binary "tools/adb:tools" \
     --hidden-import "rumps" \
     --hidden-import "psutil" \
     --hidden-import "objc" \

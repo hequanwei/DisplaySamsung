@@ -138,5 +138,23 @@ class TestSunshineConfig(unittest.TestCase):
         print("\n[测试信息] Sunshine 配置覆写与还原测试顺利通过")
 
 
+class TestADBAndHotspotManager(unittest.TestCase):
+    """测试 ADB 端口反向映射与热点管理器模块"""
+
+    def test_adb_binary_detection(self):
+        """测试 ADB 工具路径解析与可执行权限"""
+        from adb_manager import ADBManager, get_adb_path
+        adb_path = get_adb_path()
+        self.assertIsNotNone(adb_path, "未定位到 ADB 二进制文件")
+        self.assertTrue(os.access(adb_path, os.X_OK), "ADB 二进制缺少可执行权限")
+        print(f"\n[测试信息] 成功定位可用 ADB 工具: {adb_path}")
+
+    def test_hotspot_gateway_detection(self):
+        """测试热点网关 IP 探测函数正常返回元组"""
+        from hotspot_manager import get_hotspot_gateway_ip
+        iface, ip = get_hotspot_gateway_ip()
+        print(f"\n[测试信息] 热点网关探测执行完成: {iface} -> {ip}")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -9,7 +9,7 @@ from pathlib import Path
 # ===========================
 # 应用版本信息
 # ===========================
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.1.0"
 
 # ===========================
 # 虚拟显示器规格配置
@@ -32,10 +32,14 @@ if getattr(sys, "frozen", False):
     NATIVE_DRIVER_BIN = TOOLS_DIR / "virtual_display"
     if not NATIVE_DRIVER_BIN.exists():
         NATIVE_DRIVER_BIN = Path(sys.executable).parent / "tools" / "virtual_display"
+    ADB_BIN = TOOLS_DIR / "adb"
+    if not ADB_BIN.exists():
+        ADB_BIN = Path(sys.executable).parent / "tools" / "adb"
 else:
     BASE_DIR = Path(__file__).resolve().parent
     TOOLS_DIR = BASE_DIR / "tools"
     NATIVE_DRIVER_BIN = TOOLS_DIR / "virtual_display"
+    ADB_BIN = TOOLS_DIR / "adb"
 
 NATIVE_DRIVER_SRC = TOOLS_DIR / "virtual_display.m"
 
