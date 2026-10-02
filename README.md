@@ -1,6 +1,6 @@
-# 📱 DisplaySamsung - macOS Android 平板副屏自动化调度器
+# DisplaySamsung - macOS Android 平板副屏自动化调度器
 
-专为 **Android 平板**（深度优化三星 Galaxy Tab S7+ / S8+ / S9+ / S10 系列等 2800x1752 屏幕）量身打造的 macOS 状态栏副屏自动化调度器。通过 Sunshine / Moonlight 极速串流协议，让你的平板瞬间化身为支持 **120Hz 视网膜高刷、低至 2ms 延迟、支持横竖屏自由旋转** 的极致副屏！
+专为 **Android 平板**（深度优化三星 Galaxy Tab S7+ / S8+ / S9+ / S10 系列等 2800x1752 屏幕）量身打造的 macOS 状态栏副屏自动化调度器。通过 Sunshine / Moonlight 极速串流协议， **120Hz 视网膜高刷、低至 2ms 延迟、支持横竖屏自由旋转** 副屏！
 
 ---
 
