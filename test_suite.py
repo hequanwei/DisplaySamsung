@@ -5,6 +5,7 @@
 
 import os
 import sys
+import json
 import unittest
 import tempfile
 from pathlib import Path
@@ -154,6 +155,43 @@ class TestADBAndHotspotManager(unittest.TestCase):
         from hotspot_manager import get_hotspot_gateway_ip
         iface, ip = get_hotspot_gateway_ip()
         print(f"\n[测试信息] 热点网关探测执行完成: {iface} -> {ip}")
+
+
+class TestDashboardManager(unittest.TestCase):
+    """测试控制中心微型服务与数据接口"""
+
+    def test_dashboard_api(self):
+        """测试控制中心 HTTP API 接口响应"""
+        import urllib.request
+        from dashboard import DashboardManager
+
+        class MockApp:
+            current_mode = "idle"
+            current_ip = ""
+            current_iface = ""
+            orientation = "landscape"
+            position = "right"
+
+        mock_app = MockApp()
+        dm = DashboardManager(mock_app)
+        try:
+            # 访问状态接口
+            url_status = "http://127.0.0.1:49221/api/status"
+            req = urllib.request.Request(url_status)
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                self.assertEqual(resp.status, 200)
+                data = json.loads(resp.read().decode("utf-8"))
+                self.assertEqual(data.get("mode"), "idle")
+                self.assertEqual(data.get("version"), "2.2.0")
+                print(f"\n[测试信息] 控制中心 API /api/status 响应正常: {data}")
+
+            # 访问日志接口
+            url_logs = "http://127.0.0.1:49221/api/logs"
+            with urllib.request.urlopen(url_logs, timeout=3) as resp:
+                self.assertEqual(resp.status, 200)
+                print("[测试信息] 控制中心 API /api/logs 响应正常")
+        finally:
+            dm.stop()
 
 
 if __name__ == "__main__":

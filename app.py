@@ -32,6 +32,7 @@ from hotspot_manager import (
     open_macos_sharing_settings,
     get_hotspot_guide,
 )
+from dashboard import DashboardManager
 from installer import (
     is_sunshine_installed,
     install_sunshine,
@@ -69,6 +70,7 @@ class DisplaySamsungApp(rumps.App):
         self.display_mgr = VirtualDisplayManager()
         self.sunshine_mgr = SunshineManager()
         self.adb_mgr = ADBManager()
+        self.dashboard_mgr = DashboardManager(self)
 
         # 运行状态
         self.current_mode: str = "idle"  # 'idle', 'usb', 'wifi', 'hotspot'
@@ -80,37 +82,16 @@ class DisplaySamsungApp(rumps.App):
         self.orientation: str = "landscape"  # 'landscape' (横屏 2800x1752), 'portrait' (竖屏 1752x2800)
         self.position: str = "right"  # 'right', 'left', 'top', 'bottom'
 
-        # 构造菜单结构
-        self.status_item = rumps.MenuItem("● 状态: 未连接", callback=self.show_status_details)
+        # 构造极简菜单结构 (极致精炼，所有复杂设置收拢至独立控制中心)
+        self.status_item = rumps.MenuItem("● 状态: 未连接", callback=self.open_dashboard)
         self.usb_item = rumps.MenuItem("⚡ 启动 (Type-C 有线直连模式)", callback=self.start_usb_mode)
         self.wifi_item = rumps.MenuItem("📶 启动 (Wi-Fi 局域网模式)", callback=self.start_wifi_mode)
         self.hotspot_item = rumps.MenuItem("🌐 启动 (Mac 便携热点模式)", callback=self.start_hotspot_mode)
-        self.stop_item = rumps.MenuItem("停止副屏与串流", callback=self.stop_service)
-        
-        # 平板方向与布局子菜单
-        self.layout_menu = rumps.MenuItem("📐 平板方向与布局")
-        self.orient_landscape_item = rumps.MenuItem("✓ 🖥️ 横屏模式 (2800x1752)", callback=lambda _: self.set_orientation("landscape"))
-        self.orient_portrait_item = rumps.MenuItem("  📱 竖屏模式 (1752x2800)", callback=lambda _: self.set_orientation("portrait"))
-        self.pos_left_item = rumps.MenuItem("  ⬅️ 放在主屏左侧", callback=lambda _: self.set_position("left"))
-        self.pos_right_item = rumps.MenuItem("✓ ➡️ 放在主屏右侧", callback=lambda _: self.set_position("right"))
-        self.pos_top_item = rumps.MenuItem("  ⬆️ 放在主屏上方", callback=lambda _: self.set_position("top"))
-        self.pos_bottom_item = rumps.MenuItem("  ⬇️ 放在主屏下方", callback=lambda _: self.set_position("bottom"))
+        self.stop_item = rumps.MenuItem("⏹ 停止副屏与串流", callback=self.stop_service)
 
-        self.layout_menu.add(self.orient_landscape_item)
-        self.layout_menu.add(self.orient_portrait_item)
-        self.layout_menu.add(rumps.separator)
-        self.layout_menu.add(self.pos_left_item)
-        self.layout_menu.add(self.pos_right_item)
-        self.layout_menu.add(self.pos_top_item)
-        self.layout_menu.add(self.pos_bottom_item)
-
-        # 工具项
-        self.guide_lock_item = rumps.MenuItem("🛡️ 彻底解决平板黑屏/滑动锁", callback=self.show_game_booster_guide)
-        self.guide_usb_item = rumps.MenuItem("⚡ Type-C 有线直连使用向导", callback=self.show_usb_tethering_guide)
-        self.guide_hotspot_item = rumps.MenuItem("🌐 Mac 便携热点设置向导", callback=self.show_hotspot_guide)
-        self.install_item = rumps.MenuItem("🛠️ 一键安装 Sunshine 串流服务端", callback=self.trigger_install_sunshine)
-        self.diag_item = rumps.MenuItem("🔍 网络与环境诊断报告", callback=self.show_diagnostics)
-        self.webui_item = rumps.MenuItem("打开 Sunshine 控制台", callback=self.open_sunshine_webui)
+        # 核心设置与日志入口
+        self.dashboard_item = rumps.MenuItem("⚙️ 控制中心与偏好设置...", callback=self.open_dashboard)
+        self.logs_item = rumps.MenuItem("📜 查看实时运行日志...", callback=self.open_logs_dashboard)
         self.quit_item = rumps.MenuItem("退出应用", callback=self.clean_and_quit)
 
         self.menu = [
@@ -121,15 +102,8 @@ class DisplaySamsungApp(rumps.App):
             self.hotspot_item,
             self.stop_item,
             None,
-            self.layout_menu,
-            None,
-            self.guide_lock_item,
-            self.guide_usb_item,
-            self.guide_hotspot_item,
-            None,
-            self.install_item,
-            self.diag_item,
-            self.webui_item,
+            self.dashboard_item,
+            self.logs_item,
             None,
             self.quit_item,
         ]
@@ -139,6 +113,14 @@ class DisplaySamsungApp(rumps.App):
 
         # 注册退出清理钩子
         self._register_exit_handlers()
+
+    def open_dashboard(self, _=None):
+        """呼出 Mole 风格高颜值独立控制中心"""
+        self.dashboard_mgr.show_dashboard()
+
+    def open_logs_dashboard(self, _=None):
+        """呼出独立控制中心并直接展示实时日志页"""
+        self.dashboard_mgr.show_dashboard(initial_tab="logs")
 
     def _register_exit_handlers(self):
         """注册异常中断与退场清理信号钩子"""
@@ -154,6 +136,11 @@ class DisplaySamsungApp(rumps.App):
     def _cleanup_all(self):
         """确保 100% 终止 Sunshine 进程、销毁虚拟显示器并注销 ADB 端口映射"""
         logger.info("执行全局资源回收清理...")
+        try:
+            self.dashboard_mgr.stop()
+        except Exception as e:
+            logger.error(f"停止控制中心服务异常: {e}")
+
         try:
             self.adb_mgr.cleanup()
         except Exception as e:

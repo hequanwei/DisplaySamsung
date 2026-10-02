@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DisplaySamsung 控制中心</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 顶部沉浸式导航栏 -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon">📱</div>
+      <div class="brand-info">
+        <h1>DisplaySamsung</h1>
+        <span class="version-tag" id="appVersion">v2.2.0</span>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="dashboard">📊 仪表盘</button>
+      <button class="nav-tab" data-tab="layout">📐 屏幕布局</button>
+      <button class="nav-tab" data-tab="guard">🛡️ 平板卫士</button>
+      <button class="nav-tab" data-tab="logs">📜 实时日志</button>
+      <button class="nav-tab" data-tab="tools">🛠️ 工具箱</button>
+    </nav>
+  </header>
+
+  <main class="main-content">
+    <!-- 1. 仪表盘 -->
+    <section class="tab-pane active" id="tab-dashboard">
+      <div class="bento-grid">
+        <!-- 主状态大卡片 -->
+        <div class="bento-card hero-status-card">
+          <div class="card-header">
+            <div class="status-indicator">
+              <span class="pulse-dot" id="statusDot"></span>
+              <span class="status-text" id="statusTitle">未连接 (闲置)</span>
+            </div>
+            <span class="badge-capsule" id="modeBadge">IDLE</span>
+          </div>
+          <div class="hero-metrics">
+            <div class="metric-item">
+              <span class="metric-label">刷新率</span>
+              <span class="metric-val highlight">120 <small>Hz</small></span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">分辨率</span>
+              <span class="metric-val" id="metricRes">2800 × 1752</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">串流延迟</span>
+              <span class="metric-val" id="metricLatency">&lt; 2 <small>ms</small></span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">绑网 IP</span>
+              <span class="metric-val text-mono" id="metricIp">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 快速模式启动卡片 -->
+        <div class="bento-card mode-actions-card">
+          <h3>🚀 模式快捷切换</h3>
+          <div class="action-buttons-group">
+            <button class="action-btn primary-btn" id="btnUsbMode" onclick="triggerMode('usb')">
+              <span class="btn-icon">⚡</span>
+              <div class="btn-text">
+                <strong>Type-C 有线直连</strong>
+                <small>纯 ADB 映射 · 0ms 零延迟 · 零 VPN</small>
+              </div>
+            </button>
+            <button class="action-btn secondary-btn" id="btnWifiMode" onclick="triggerMode('wifi')">
+              <span class="btn-icon">📶</span>
+              <div class="btn-text">
+                <strong>Wi-Fi 局域网模式</strong>
+                <small>5GHz 高速局域网 · 2ms 延迟</small>
+              </div>
+            </button>
+            <button class="action-btn secondary-btn" id="btnHotspotMode" onclick="triggerMode('hotspot')">
+              <span class="btn-icon">🌐</span>
+              <div class="btn-text">
+                <strong>Mac 便携热点模式</strong>
+                <small>差旅酒店神器 · 免疫 AP 隔离</small>
+              </div>
+            </button>
+            <button class="action-btn danger-btn" id="btnStopMode" onclick="triggerMode('stop')">
+              <span class="btn-icon">⏹</span>
+              <div class="btn-text">
+                <strong>停止副屏与串流</strong>
+                <small>释放端口 · 销毁虚拟显示器防幽灵</small>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 屏幕与方向布局 -->
+    <section class="tab-pane" id="tab-layout">
+      <div class="bento-grid">
+        <div class="bento-card">
+          <h3>🖥️ 平板屏幕朝向</h3>
+          <p class="section-desc">支持串流中秒级热重载，无需重新连接 Moonlight。</p>
+          <div class="layout-toggle-group">
+            <button class="toggle-card active" id="orientLandscape" onclick="setOrientation('landscape')">
+              <span class="card-icon">🖥️</span>
+              <strong>横屏模式</strong>
+              <small>2800 × 1752 (视网膜宽屏)</small>
+            </button>
+            <button class="toggle-card" id="orientPortrait" onclick="setOrientation('portrait')">
+              <span class="card-icon">📱</span>
+              <strong>竖屏模式</strong>
+              <small>1752 × 2800 (长文档与代码)</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <h3>🧭 空间排布方位 (鼠标穿透方向)</h3>
+          <p class="section-desc">设置平板放置在 Mac 主屏幕的相对物理位置。</p>
+          <div class="position-grid">
+            <button class="pos-box" id="posTop" onclick="setPosition('top')">
+              <span>⬆️ 上方</span>
+            </button>
+            <div class="pos-middle-row">
+              <button class="pos-box" id="posLeft" onclick="setPosition('left')">
+                <span>⬅️ 左侧</span>
+              </button>
+              <div class="pos-box mac-main-screen">
+                <strong>💻 Mac 主屏</strong>
+              </div>
+              <button class="pos-box active" id="posRight" onclick="setPosition('right')">
+                <span>➡️ 右侧</span>
+              </button>
+            </div>
+            <button class="pos-box" id="posBottom" onclick="setPosition('bottom')">
+              <span>⬇️ 下方</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 平板卫士 (防黑屏/锁屏) -->
+    <section class="tab-pane" id="tab-guard">
+      <div class="bento-grid">
+        <div class="bento-card guard-card">
+          <div class="guard-header">
+            <span class="guard-shield-icon">🛡️</span>
+            <div>
+              <h3>彻底解除三星 Game Booster 滑动锁</h3>
+              <p>针对“挂机 3 分钟后平板自动调暗并出现滑动锁图标”提供终极根治方案</p>
+            </div>
+          </div>
+          <div class="guide-steps-list">
+            <div class="step-card">
+              <span class="step-num">1</span>
+              <div>
+                <strong>关闭游戏助推器触摸保护 (永久根除)</strong>
+                <p>在平板 Moonlight 运行时从边缘内划唤出导航条，点击 🎮 游戏助推器 -> ⚙️ 设置 -> 将【触摸保护超时】改为【从不】，并关闭【自动屏幕锁定】。</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <span class="step-num">2</span>
+              <div>
+                <strong>开启充电屏幕常亮</strong>
+                <p>在平板【开发者选项】开启【不锁定屏幕 / 充电时保持唤醒】。插上 Type-C 线后屏幕 100% 保持常亮。</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <span class="step-num">3</span>
+              <div>
+                <strong>一键 ADB 防黑屏常亮守护</strong>
+                <p>若通过 Type-C 连线并开启了 USB 调试，点击下方按钮，由 Mac 自动下发系统常亮指令：</p>
+                <button class="mini-action-btn" onclick="sendStayAwake()">⚡ 立即下发常亮指令</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 实时日志查看器 -->
+    <section class="tab-pane" id="tab-logs">
+      <div class="bento-card logs-card">
+        <div class="logs-toolbar">
+          <div class="logs-title">
+            <span class="pulse-dot green"></span>
+            <strong>调度器实时运行日志 (scheduler.log)</strong>
+          </div>
+          <div class="logs-actions">
+            <button class="tool-btn" onclick="copyLogs()">📋 复制日志</button>
+            <button class="tool-btn" onclick="clearLogs()">🗑️ 清空日志</button>
+            <button class="tool-btn" onclick="openLogFile()">📂 在访达中定位</button>
+            <label class="auto-scroll-label">
+              <input type="checkbox" id="chkAutoScroll" checked> 自动滚屏
+            </label>
+          </div>
+        </div>
+        <div class="terminal-log-viewer" id="logViewer">
+          <pre class="log-content" id="logContent">正在加载运行日志...</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. 高级工具箱 -->
+    <section class="tab-pane" id="tab-tools">
+      <div class="bento-grid">
+        <div class="bento-card">
+          <h3>🛠️ 串流服务端与控制台</h3>
+          <p class="section-desc">管理 Sunshine 串流服务端生命周期与配对控制台。</p>
+          <div class="tool-links-group">
+            <button class="action-btn secondary-btn" onclick="openWebUI()">
+              <span class="btn-icon">🌐</span>
+              <div class="btn-text">
+                <strong>打开 Sunshine Web 控制台</strong>
+                <small>进行 PIN 配对、串流画质与编码调优</small>
+              </div>
+            </button>
+            <button class="action-btn secondary-btn" onclick="reinstallSunshine()">
+              <span class="btn-icon">⚙️</span>
+              <div class="btn-text">
+                <strong>检查 / 重新安装 Sunshine 服务</strong>
+                <small>一键从官方源部署至 /Applications/Sunshine.app</small>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <h3>🔍 网络与环境自检报告</h3>
+          <p class="section-desc">深度扫描系统虚拟显示器、网卡配置与 Sunshine 进程健康度。</p>
+          <button class="action-btn secondary-btn" onclick="runDiagnostics()">
+            <span class="btn-icon">📋</span>
+            <div class="btn-text">
+              <strong>生成诊断报告</strong>
+              <small>输出当前网络接口、DisplayID 与进程状态</small>
+            </div>
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

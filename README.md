@@ -6,23 +6,24 @@
 
 [![macOS Platform](https://img.shields.io/badge/macOS-Apple_Silicon_%7C_Intel-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/hequanwei/DisplaySamsung)
 [![Android Support](https://img.shields.io/badge/Android-One_UI_5%2B_%7C_Tablets-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/hequanwei/DisplaySamsung)
-[![Release](https://img.shields.io/badge/Release-v2.0.0-blue?style=for-the-badge&logo=github)](https://github.com/hequanwei/DisplaySamsung/releases)
+[![Release](https://img.shields.io/badge/Release-v2.2.0-blue?style=for-the-badge&logo=github)](https://github.com/hequanwei/DisplaySamsung/releases)
 [![Refresh Rate](https://img.shields.io/badge/Display-120Hz_HiDPI-ff69b4?style=for-the-badge&logo=samsung)](https://github.com/hequanwei/DisplaySamsung)
-[![Latency](https://img.shields.io/badge/Latency-%3C_3ms-success?style=for-the-badge)](https://github.com/hequanwei/DisplaySamsung)
+[![Latency](https://img.shields.io/badge/Latency-%3C_2ms-success?style=for-the-badge)](https://github.com/hequanwei/DisplaySamsung)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
 <br />
 
 **DisplaySamsung** 是一款专为 **macOS** 与 **Android 平板**（深度优化三星 Galaxy Tab S7+ / S8+ / S9+ / S10 系列等 2800x1752 顶级 AMOLED 屏）打造的轻量级状态栏自动化调度器。<br/>
-通过内置原生虚拟显示器内核驱动与 Sunshine / Moonlight 极速串流，提供超越苹果原生 Sidecar 的 **120Hz 极致视网膜高刷、低至 2ms 延迟、支持横竖屏即时热切换、Type-C 有线/无线双模直连** 的非凡体验！
+通过内置原生虚拟显示器内核驱动与 Sunshine / Moonlight 极速串流，提供超越苹果原生 Sidecar 的 **120Hz 极致视网膜高刷、低至 2ms 延迟、支持横竖屏即时热切换、Type-C 纯有线/无线双模直连** 的非凡体验！
 
 <br />
 
 [✨ 核心特性](#-核心特性) •
 [📷 实测预览](#-实测预览) •
 [🆚 方案对比](#-为什么选择-displaysamsung) •
+[🎛️ 独立控制中心](#-mole-风格独立控制中心与实时日志) •
 [🚀 30秒极速上手](#-30秒极速上手-新手-1-2-3) •
-[⚡ Type-C 有线模式](#-type-c-数据线直连极速模式) •
+[⚡ Type-C 有线模式](#-模式-1type-c-数据线纯有线直连-纯-adb-映射--零-vpn-冲突) •
 [🛡️ 防黑屏与滑动锁指南](#-彻底解决平板黑屏与滑动锁问题) •
 [💡 FAQ 避坑指南](#-常见问题与避坑指南-faq)
 
@@ -41,21 +42,27 @@
 <p align="center">
   <img src="assets/screenshots/display_main.png" alt="主副屏双屏排布示意" width="90%" />
   <br />
-  <em>macOS 系统原生扩展识别：主屏 + 三星平板无缝双屏空间排布</em>
+  <em>macOS 原生双屏空间无缝扩展与排列示意</em>
 </p>
 
 ---
 
 ## ✨ 核心特性
 
+- 🎛️ **Mole 级原生极致美学独立控制中心 (Dashboard & Settings)**
+  - 汲取 [tw93/mole](https://github.com/tw93/mole) 原生视觉灵魂，沉浸毛玻璃质感、Bento Grid 细边框卡片与科技呼吸状态指示灯；
+  - **状态栏极致精简**：下拉菜单仅保留 6 项核心快捷开关，将所有复杂设置统一收纳至独立控制中心！
+- 📜 **内置实时运行日志流 (Live Logs Viewer)**
+  - 控制台深色等宽字体终端样式，支持实时滚动刷新、一键清空日志、复制内容并在访达中定位。
 - ⚡ **原生 120Hz 满血高刷 & 2800x1752 HiDPI Retina**
   - 内置基于 macOS 私有 `CGVirtualDisplay` API 编写的原生驱动，直接激活 **120 赫兹** 原生超高刷新率，杜绝 60Hz 拖影，丝滑跟手。
 - 📐 **平板方向与空间布局即时热切换**
   - **横竖屏一键旋转**：随时在 **🖥️ 横屏 (2800x1752)** 与 **📱 竖屏 (1752x2800)** 之间无缝热切换，看长文档、刷 GitHub、写代码、审阅 PDF 绝配！
   - **空间排布自由选择**：副屏放置在 Mac 的 **左侧、右侧、上方、下方**，点击秒级生效，实时改变鼠标穿屏方向。
-- 🔌 **双模支持：Type-C 有线极速直连 + Wi-Fi 便携无线**
-  - **Type-C 有线直连**：抗干扰强、延迟逼近 0ms，同时为平板满血供电；
-  - **Wi-Fi 便携模式**：5GHz 局域网下延迟仅 2~4ms，桌面无线无拘无束。
+- 🔌 **全场景三大直连模式 (主机全托管 · 零 VPN 冲突)**
+  - **⚡ Type-C 纯有线直连**：纯 ADB 端口反向映射，0ms 延迟，**零 VPN、绝不顶掉平板原有科学上网代理**；
+  - **📶 Wi-Fi 局域网模式**：5GHz 局域网下延迟仅 2~3ms，桌面无线无拘无束；
+  - **🌐 Mac 便携独占热点模式**：Mac 本地发射 5GHz 局域网，彻底免疫酒店弱网与 AP 隔离。
 - 🛡️ **针对三星 One UI 独家优化：防锁屏与常亮卫士**
   - 彻底破解三星 Game Booster（游戏助推器）在挂机 3 分钟后出现的“触摸保护滑动锁”与黑屏问题，副屏长久保持常亮不中断。
 - 🚫 **100% 杜绝幽灵屏幕残留**

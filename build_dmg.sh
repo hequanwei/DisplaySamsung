@@ -68,11 +68,13 @@ pyinstaller \
     --icon "assets/app.icns" \
     --add-binary "tools/virtual_display:tools" \
     --add-binary "tools/adb:tools" \
+    --add-data "assets/web:assets/web" \
     --hidden-import "rumps" \
     --hidden-import "psutil" \
     --hidden-import "objc" \
     --hidden-import "Foundation" \
     --hidden-import "AppKit" \
+    --hidden-import "WebKit" \
     app.py
 
 APP_PATH="dist/DisplaySamsung.app"
@@ -110,8 +112,9 @@ hdiutil create \
     -format UDZO \
     "$DMG_OUTPUT"
 
-# 清理暂存目录
-rm -rf "$DMG_STAGING"
+# 清理暂存目录与本地解压的 app，避免 Launchpad/Spotlight 出现双 App 重复图标
+rm -rf "$DMG_STAGING" "$APP_PATH"
+touch dist/.metadata_never_index
 
 echo "=================================================="
 echo "🎉 DMG 安装镜像制作成功！"
