@@ -1,0 +1,5 @@
+# macOS 状态栏应用与系统监控依赖
+rumps>=0.4.0
+psutil>=5.9.0
+pyobjc-core>=9.0
+pyobjc-framework-Cocoa>=9.0

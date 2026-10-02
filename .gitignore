@@ -1,0 +1,33 @@
+# macOS 系统文件
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Python 虚拟环境与缓存
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 打包构建缓存与产物
+build/
+dist/
+*.spec
+.pyinstaller_cache/
+assets/app.iconset/
+
+# 编译的本地二进制驱动 (保留源码 tools/virtual_display.m)
+tools/virtual_display
+
+# 运行时日志与临时文件
+*.log
+*.log.*
+scheduler.log
+.clang_cache/
+.swift_cache/
+scratch/
+scratch*
