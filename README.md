@@ -19,6 +19,20 @@
 
 ---
 
+## 📷 实测界面预览
+
+| 🖥️ 120Hz 视网膜高刷与原生驱动 | 📐 状态栏菜单与方向/布局热切换 |
+| :---: | :---: |
+| ![SamsungTab 120Hz 高刷设置](assets/screenshots/display_samsungtab_120hz.png) | ![状态栏菜单与方向布局](assets/screenshots/menu_bar_direction.png) |
+
+<p align="center">
+  <img src="assets/screenshots/display_main.png" alt="主副屏双屏排布示意" width="85%" />
+  <br />
+  <em>macOS 原生双屏空间无缝扩展与排列示意</em>
+</p>
+
+---
+
 ## 🚀 极速上手流程 (新手 1-2-3)
 
 ### 第一步：Mac 端安装 DisplaySamsung
