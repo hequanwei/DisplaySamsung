@@ -10,10 +10,10 @@
   <!-- 顶部沉浸式导航栏 -->
   <header class="app-header">
     <div class="brand">
-      <div class="brand-icon">📱</div>
+      <img src="logo.png" alt="Logo" class="brand-logo-img">
       <div class="brand-info">
         <h1>DisplaySamsung</h1>
-        <span class="version-tag" id="appVersion">v2.2.0</span>
+        <span class="version-tag" id="appVersion">v2.3.0</span>
       </div>
     </div>
     <nav class="nav-tabs">
@@ -238,9 +238,45 @@
             </div>
           </button>
         </div>
+
+        <!-- 6. 在线版本升级检测卡片 -->
+        <div class="bento-card">
+          <h3>🚀 在线版本与更新检测</h3>
+          <p class="section-desc">直连 GitHub Releases 获取最新功能升级与修复。</p>
+          <div class="update-status-row">
+            <div>
+              <span style="font-size:12px; color:var(--text-muted);">当前运行版本：</span>
+              <strong id="updateCurrentVer">v2.3.0</strong>
+            </div>
+            <span class="badge-capsule" id="updateBadge">最新</span>
+          </div>
+          <div id="updateInfoBox" style="display:none;">
+            <p id="updateMsg" style="font-size:12.5px; color:var(--text-main); margin-bottom:8px;"></p>
+            <div class="update-release-notes" id="updateNotes"></div>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:14px;">
+            <button class="action-btn primary-btn" id="btnCheckUpdate" onclick="checkAppUpdate()" style="flex:1;">
+              <span class="btn-icon">🔄</span>
+              <div class="btn-text">
+                <strong id="btnCheckUpdateText">立即检查更新</strong>
+                <small>对比 GitHub 远端 Release</small>
+              </div>
+            </button>
+            <a class="action-btn secondary-btn" id="btnDownloadUpdate" href="#" target="_blank" style="display:none; flex:1; text-decoration:none;">
+              <span class="btn-icon">📦</span>
+              <div class="btn-text">
+                <strong>一键下载 DMG</strong>
+                <small>获取最新安装包</small>
+              </div>
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   </main>
+
+  <!-- 全局无阻塞现代毛玻璃 Toast 容器 -->
+  <div id="toastContainer" class="toast-container"></div>
 
   <script src="app.js"></script>
 </body>

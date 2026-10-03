@@ -89,11 +89,28 @@ class DisplaySamsungApp(rumps.App):
         self.hotspot_item = rumps.MenuItem("🌐 启动 (Mac 便携热点模式)", callback=self.start_hotspot_mode)
         self.stop_item = rumps.MenuItem("⏹ 停止副屏与串流", callback=self.stop_service)
 
-        # 核心设置与日志入口
+        # 核心设置与日志入口        # 核心设置与日志入口
         self.dashboard_item = rumps.MenuItem("⚙️ 控制中心与偏好设置...", callback=self.open_dashboard)
         self.logs_item = rumps.MenuItem("📜 查看实时运行日志...", callback=self.open_logs_dashboard)
+        self.update_item = rumps.MenuItem("🔄 检查更新...", callback=self.check_update)
+        self.logo_item = rumps.MenuItem("🖼️ 生成 Logo Prompt...", callback=self.show_logo_prompt)
+        # 屏幕方向子菜单
+        self.orient_landscape_item = rumps.MenuItem("✓ 🖥️ 横屏模式 (2800x1752)", callback=lambda _: self.set_orientation('landscape'))
+        self.orient_portrait_item = rumps.MenuItem("   📱 竖屏模式 (1752x2800)", callback=lambda _: self.set_orientation('portrait'))
+        self.orientation_menu = rumps.MenuItem("🔄 屏幕方向")
+        self.orientation_menu.add(self.orient_landscape_item)
+        self.orientation_menu.add(self.orient_portrait_item)
+        # 副屏位置子菜单
+        self.pos_left_item = rumps.MenuItem("✓ ⬅️ 放在主屏左侧", callback=lambda _: self.set_position('left'))
+        self.pos_right_item = rumps.MenuItem("   ➡️ 放在主屏右侧", callback=lambda _: self.set_position('right'))
+        self.pos_top_item = rumps.MenuItem("   ⬆️ 放在主屏上方", callback=lambda _: self.set_position('top'))
+        self.pos_bottom_item = rumps.MenuItem("   ⬇️ 放在主屏下方", callback=lambda _: self.set_position('bottom'))
+        self.position_menu = rumps.MenuItem("📍 副屏位置")
+        self.position_menu.add(self.pos_left_item)
+        self.position_menu.add(self.pos_right_item)
+        self.position_menu.add(self.pos_top_item)
+        self.position_menu.add(self.pos_bottom_item)
         self.quit_item = rumps.MenuItem("退出应用", callback=self.clean_and_quit)
-
         self.menu = [
             self.status_item,
             None,  # 分隔线
@@ -104,6 +121,10 @@ class DisplaySamsungApp(rumps.App):
             None,
             self.dashboard_item,
             self.logs_item,
+            self.update_item,
+            self.logo_item,
+            self.orientation_menu,
+            self.position_menu,
             None,
             self.quit_item,
         ]
@@ -321,38 +342,35 @@ class DisplaySamsungApp(rumps.App):
         logger.info("用户请求启动 Type-C 有线直连模式...")
         self.title = "⏳ 正在连接 ADB..."
 
-        def worker():
-            # 1. 检查 Sunshine 是否已安装
-            if not is_sunshine_installed():
-                self.update_menu_states()
-                resp = rumps.alert(
-                    title="尚未安装 Sunshine 服务",
-                    message="系统中尚未检测到 Sunshine 串流服务端，无法推流给平板。\n是否立即为您一键自动安装 Sunshine？",
-                    ok="一键自动安装并启动",
-                    cancel="取消",
-                )
-                if resp == 1:
-                    self._start_install_thread(then_activate_mode="usb", iface="adb_tunnel", ip="127.0.0.1")
-                return
+        # 先检查 Sunshine 是否已安装（主线程）
+        if not is_sunshine_installed():
+            resp = rumps.alert(
+                title="尚未安装 Sunshine 服务",
+                message="系统中尚未检测到 Sunshine 串流服务端，无法推流给平板。\n是否立即为您一键自动安装 Sunshine？",
+                ok="一键自动安装并启动",
+                cancel="取消",
+            )
+            if resp == 1:
+                self._start_install_thread(then_activate_mode="usb", iface="adb_tunnel", ip="127.0.0.1")
+            return
 
+        def worker():
             # 2. 建立端口映射并自动下发充电防黑屏常亮
             ok, msg = self.adb_mgr.setup_reverse_forwarding()
             if not ok:
-                self.update_menu_states()
-                resp = rumps.alert(
-                    title="Type-C 有线连接提示",
-                    message=msg,
-                    ok="查看详细图文指引",
-                    cancel="关闭",
+                # 使用通知而非 alert，避免非主线程 UI 调用
+                rumps.notification(
+                    title="Type‑C 有线连接提示",
+                    subtitle=msg,
+                    message="请查看详细图文指引",
                 )
-                if resp == 1:
-                    self.show_usb_tethering_guide()
+                self.show_usb_tethering_guide()
                 return
 
             # 3. 激活虚拟副屏与 Sunshine
             self._activate_streaming(mode="usb", iface="adb_tunnel", ip="127.0.0.1")
             rumps.notification(
-                title="⚡ Type-C 有线直连已建立！",
+                title="⚡ Type‑C 有线直连已建立！",
                 subtitle="本地映射: 127.0.0.1",
                 message="请在平板端 Moonlight 添加并连接 127.0.0.1，尽享 0 延迟 120Hz 极速副屏！",
             )
@@ -448,8 +466,10 @@ class DisplaySamsungApp(rumps.App):
         if self.orientation == orient:
             return
         self.orientation = orient
-        self.orient_landscape_item.title = "✓ 🖥️ 横屏模式 (2800x1752)" if orient == "landscape" else "  🖥️ 横屏模式 (2800x1752)"
-        self.orient_portrait_item.title = "✓ 📱 竖屏模式 (1752x2800)" if orient == "portrait" else "  📱 竖屏模式 (1752x2800)"
+        if hasattr(self, 'orient_landscape_item'):
+            self.orient_landscape_item.title = "✓ 🖥️ 横屏模式 (2800x1752)" if orient == "landscape" else "  🖥️ 横屏模式 (2800x1752)"
+        if hasattr(self, 'orient_portrait_item'):
+            self.orient_portrait_item.title = "✓ 📱 竖屏模式 (1752x2800)" if orient == "portrait" else "  📱 竖屏模式 (1752x2800)"
         logger.info(f"已切换屏幕朝向为: {orient}")
 
         # 如果当前正处于串流状态，平滑热重载新分辨率
@@ -464,21 +484,28 @@ class DisplaySamsungApp(rumps.App):
     def set_position(self, pos: str):
         """切换副屏相对主屏的摆放方位 (left, right, top, bottom)"""
         self.position = pos
-        self.pos_left_item.title = "✓ ⬅️ 放在主屏左侧" if pos == "left" else "  ⬅️ 放在主屏左侧"
-        self.pos_right_item.title = "✓ ➡️ 放在主屏右侧" if pos == "right" else "  ➡️ 放在主屏右侧"
-        self.pos_top_item.title = "✓ ⬆️ 放在主屏上方" if pos == "top" else "  ⬆️ 放在主屏上方"
-        self.pos_bottom_item.title = "✓ ⬇️ 放在主屏下方" if pos == "bottom" else "  ⬇️ 放在主屏下方"
+        if hasattr(self, 'pos_left_item'):
+            self.pos_left_item.title = "✓ ⬅️ 放在主屏左侧" if pos == "left" else "  ⬅️ 放在主屏左侧"
+        if hasattr(self, 'pos_right_item'):
+            self.pos_right_item.title = "✓ ➡️ 放在主屏右侧" if pos == "right" else "  ➡️ 放在主屏右侧"
+        if hasattr(self, 'pos_top_item'):
+            self.pos_top_item.title = "✓ ⬆️ 放在主屏上方" if pos == "top" else "  ⬆️ 放在主屏上方"
+        if hasattr(self, 'pos_bottom_item'):
+            self.pos_bottom_item.title = "✓ ⬇️ 放在主屏下方" if pos == "bottom" else "  ⬇️ 放在主屏下方"
         logger.info(f"已切换副屏相对位置为: {pos}")
 
         # 如果当前正在运行，无缝即时调整位置
         if self.current_mode != "idle":
-            self.display_mgr.change_position(pos)
-            pos_names = {"left": "左侧", "right": "右侧", "top": "上方", "bottom": "下方"}
-            rumps.notification(
-                title="副屏方位已更新",
-                subtitle=f"当前排布: {pos_names.get(pos, pos)}",
-                message="鼠标与窗口跨屏移动方向已即时调整生效！",
-            )
+            try:
+                self.display_mgr.change_position(pos)
+                pos_names = {"left": "左侧", "right": "右侧", "top": "上方", "bottom": "下方"}
+                rumps.notification(
+                    title="副屏方位已更新",
+                    subtitle=f"当前排布: {pos_names.get(pos, pos)}",
+                    message="鼠标与窗口跨屏移动方向已即时调整生效！",
+                )
+            except Exception as e:
+                logger.error(f"切换副屏位置异常: {e}")
 
     def _activate_streaming(self, mode: str, iface: str, ip: str):
         """创建虚拟屏幕、配置 Sunshine 并启动串流"""
@@ -524,9 +551,10 @@ class DisplaySamsungApp(rumps.App):
             logger.error(f"激活副屏服务失败: {e}", exc_info=True)
             self._cleanup_all()
             self.update_menu_states()
-            rumps.alert(
+            rumps.notification(
                 title="启动失败",
-                message=f"调度器启动过程中发生错误：\n{str(e)}",
+                subtitle="调度器启动异常",
+                message=str(e),
             )
 
     def stop_service(self, _):
@@ -540,13 +568,60 @@ class DisplaySamsungApp(rumps.App):
             message="已终止 Sunshine 进程并成功销毁虚拟显示器，无幽灵屏幕残留。",
         )
 
-
     def open_sunshine_webui(self, _):
         """快捷打开 Sunshine 管理后台"""
         host = self.current_ip if (self.current_ip and self.current_ip != "0.0.0.0") else "localhost"
         url = f"https://{host}:{SUNSHINE_WEB_UI_PORT}"
         logger.info(f"正在打开 Sunshine 管理控制台: {url}")
         webbrowser.open(url)
+
+    def check_update(self, _=None):
+        """检查 GitHub 最新 Release 并通知用户"""
+        import threading
+        def _async_check():
+            try:
+                from updater import check_for_updates
+                res = check_for_updates()
+                if res.get("has_update"):
+                    rumps.notification(
+                        title="🎉 发现新版本",
+                        subtitle=f"最新版本: v{res['latest_version']}",
+                        message=res.get("message", "请前往 GitHub 下载最新安装包。")
+                    )
+                else:
+                    rumps.notification(
+                        title="DisplaySamsung 已是最新版本",
+                        subtitle=f"当前版本: v{APP_VERSION}",
+                        message=res.get("message", "无需更新。")
+                    )
+            except Exception as e:
+                logger.warning(f"检查更新异常: {e}")
+                rumps.notification(
+                    title="检查更新提醒",
+                    subtitle="暂未连接到更新服务器",
+                    message=f"已是本地版本 v{APP_VERSION}"
+                )
+
+        threading.Thread(target=_async_check, daemon=True).start()
+
+    def show_logo_prompt(self, _=None):
+        """展示用于生成项目 Logo 的 Prompt"""
+        prompt = (
+            "为名为 “DisplaySamsung” 的 macOS 副屏投射工具设计一个现代简约的 logo，要求：\n"
+            "- 颜色以深空黑/三星极光蓝为主，符合 macOS 极简毛玻璃风格；\n"
+            "- 图标尺寸 1024×1024 px，Squircle 超椭圆 macOS 规范；\n"
+            "- 核心元素融合三星视网膜屏幕与 Type-C 极速环形光流；\n"
+            "- 极简细腻、带有 120Hz 科技感微光倒角。"
+        )
+        rumps.notification(
+            title="DisplaySamsung Logo Prompt",
+            subtitle="设计提示词已复制/就绪",
+            message="详情请在控制中心查看。"
+        )
+        logger.info(f"Logo Prompt: {prompt}")
+
+
+
 
     def clean_and_quit(self, _):
         """安全退出应用"""

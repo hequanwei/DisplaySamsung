@@ -28,6 +28,17 @@ echo "⚡ 编译原生虚拟显示器驱动..."
 clang -fno-modules -fobjc-arc -framework Cocoa -framework CoreGraphics -o tools/virtual_display tools/virtual_display.m
 chmod +x tools/virtual_display
 
+# 2.1 确保打包包含独立可用的 adb
+if [ ! -f "tools/adb" ]; then
+    SYS_ADB=$(which adb || echo "/opt/homebrew/bin/adb")
+    if [ -f "$SYS_ADB" ]; then
+        echo "⚡ 正在拷贝系统 ADB ($SYS_ADB) 到 tools/adb 以便自包含打包..."
+        cp "$SYS_ADB" tools/adb
+        chmod +x tools/adb
+    fi
+fi
+
+
 # 3. 检查/生成应用图标
 if [ ! -f "assets/app.icns" ]; then
     echo "⚡ 生成应用图标..."
@@ -75,6 +86,7 @@ pyinstaller \
     --hidden-import "Foundation" \
     --hidden-import "AppKit" \
     --hidden-import "WebKit" \
+    --hidden-import "packaging" \
     app.py
 
 APP_PATH="dist/DisplaySamsung.app"

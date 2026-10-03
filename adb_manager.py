@@ -72,6 +72,7 @@ class ADBManager:
 
         devices = []
         try:
+            # 使用系统默认 socket（已在系统 daemon 中启动）
             res = subprocess.run([self.adb_bin, "devices", "-l"], capture_output=True, text=True, timeout=5)
             if res.returncode == 0:
                 lines = res.stdout.strip().splitlines()

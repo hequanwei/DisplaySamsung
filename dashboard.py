@@ -39,33 +39,53 @@ class DashboardHandler(BaseHTTPRequestHandler):
         # 静默普通请求日志，保持终端清爽
         pass
 
+    def _send_json(self, data, status=200):
+        """统一返回标准 JSON 响应"""
+        try:
+            body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(body)
+        except Exception as e:
+            logger.warning(f"发送 JSON 异常: {e}")
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
         qs = parse_qs(parsed.query)
 
-        if path == "/api/status":
-            self._handle_get_status()
-        elif path == "/api/logs":
-            self._handle_get_logs()
-        elif path == "/api/logs/reveal":
-            self._handle_reveal_logs()
-        elif path == "/api/mode":
-            self._handle_set_mode(qs.get("action", [""])[0])
-        elif path == "/api/orientation":
-            self._handle_set_orientation(qs.get("val", [""])[0])
-        elif path == "/api/position":
-            self._handle_set_position(qs.get("val", [""])[0])
-        elif path == "/api/stay_awake":
-            self._handle_stay_awake()
-        elif path == "/api/tools/webui":
-            self._handle_open_webui()
-        elif path == "/api/tools/install_sunshine":
-            self._handle_install_sunshine()
-        elif path == "/api/tools/diagnostics":
-            self._handle_run_diagnostics()
-        else:
-            self._serve_static_file(path)
+        try:
+            if path == "/api/status":
+                self._handle_get_status()
+            elif path == "/api/logs":
+                self._handle_get_logs()
+            elif path == "/api/logs/reveal":
+                self._handle_reveal_logs()
+            elif path == "/api/mode":
+                self._handle_set_mode(qs.get("action", [""])[0])
+            elif path == "/api/orientation":
+                self._handle_set_orientation(qs.get("val", [""])[0])
+            elif path == "/api/position":
+                self._handle_set_position(qs.get("val", [""])[0])
+            elif path == "/api/stay_awake":
+                self._handle_stay_awake()
+            elif path == "/api/update/check":
+                self._handle_check_update()
+            elif path == "/api/tools/webui":
+                self._handle_open_webui()
+            elif path == "/api/tools/install_sunshine":
+                self._handle_install_sunshine()
+            elif path == "/api/tools/diagnostics":
+                self._handle_run_diagnostics()
+            else:
+                self._serve_static_file(path)
+        except Exception as e:
+            logger.error(f"处理 GET {path} 异常: {e}", exc_info=True)
+            self._send_json({"success": False, "error": str(e)}, status=500)
+
 
     def do_POST(self):
         parsed = urlparse(self.path)
@@ -166,72 +186,119 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def _handle_set_mode(self, action):
         app = self.app_ref
         if not app:
-            self.send_error(500)
+            self._send_json({"success": False, "error": "应用尚未就绪"}, status=500)
             return
 
-        if action == "usb":
-            threading.Thread(target=app.start_usb_mode, args=(None,), daemon=True).start()
-        elif action == "wifi":
-            threading.Thread(target=app.start_wifi_mode, args=(None,), daemon=True).start()
-        elif action == "hotspot":
-            threading.Thread(target=app.start_hotspot_mode, args=(None,), daemon=True).start()
-        elif action == "stop":
-            threading.Thread(target=app.stop_service, args=(None,), daemon=True).start()
+        try:
+            if action == "usb":
+                threading.Thread(target=app.start_usb_mode, args=(None,), daemon=True).start()
+            elif action == "wifi":
+                threading.Thread(target=app.start_wifi_mode, args=(None,), daemon=True).start()
+            elif action == "hotspot":
+                threading.Thread(target=app.start_hotspot_mode, args=(None,), daemon=True).start()
+            elif action == "stop":
+                threading.Thread(target=app.stop_service, args=(None,), daemon=True).start()
+            else:
+                self._send_json({"success": False, "error": f"未知模式: {action}"}, status=400)
+                return
 
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"OK")
+            self._send_json({"success": True, "mode": action})
+        except Exception as e:
+            logger.error(f"切换模式 {action} 异常: {e}")
+            self._send_json({"success": False, "error": str(e)}, status=500)
 
     def _handle_set_orientation(self, orient):
         app = self.app_ref
-        if app and orient in ["landscape", "portrait"]:
-            app.set_orientation(orient)
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"OK")
+        if not app:
+            self._send_json({"success": False, "error": "应用尚未就绪"}, status=500)
+            return
+
+        try:
+            if orient in ["landscape", "portrait"]:
+                app.set_orientation(orient)
+                self._send_json({"success": True, "orientation": orient})
+            else:
+                self._send_json({"success": False, "error": "不支持的屏幕朝向"}, status=400)
+        except Exception as e:
+            logger.error(f"设置屏幕朝向异常: {e}")
+            self._send_json({"success": False, "error": str(e)}, status=500)
 
     def _handle_set_position(self, pos):
         app = self.app_ref
-        if app and pos in ["left", "right", "top", "bottom"]:
-            app.set_position(pos)
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"OK")
+        if not app:
+            self._send_json({"success": False, "error": "应用尚未就绪"}, status=500)
+            return
+
+        try:
+            if pos in ["left", "right", "top", "bottom"]:
+                app.set_position(pos)
+                self._send_json({"success": True, "position": pos})
+            else:
+                self._send_json({"success": False, "error": "不支持的方位"}, status=400)
+        except Exception as e:
+            logger.error(f"设置屏幕排布异常: {e}")
+            self._send_json({"success": False, "error": str(e)}, status=500)
 
     def _handle_stay_awake(self):
-        from android_manager import enable_stay_awake
-        ok = enable_stay_awake()
-        msg = "已成功向连接的 Android 平板下发常亮指令！" if ok else "未检测到 ADB 授权连接的设备，请在平板中开启 USB 调试。"
-        body = msg.encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "text/plain; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            from android_manager import enable_stay_awake
+            ok = enable_stay_awake()
+            msg = "已成功向连接的 Android 平板下发常亮指令！" if ok else "未检测到 ADB 授权连接的设备，请在平板中开启 USB 调试并允许授权。"
+            self._send_json({"success": ok, "message": msg})
+        except Exception as e:
+            logger.warning(f"下发常亮指令异常: {e}")
+            self._send_json({"success": False, "message": f"执行异常: {str(e)}"})
+
+    def _handle_check_update(self):
+        try:
+            from updater import check_for_updates
+            res = check_for_updates()
+            self._send_json(res)
+        except Exception as e:
+            logger.warning(f"检查更新异常: {e}")
+            self._send_json({
+                "success": False,
+                "has_update": False,
+                "current_version": APP_VERSION,
+                "latest_version": APP_VERSION,
+                "message": f"检查更新异常: {str(e)}"
+            })
 
     def _handle_open_webui(self):
         app = self.app_ref
         if app:
-            app.open_sunshine_webui(None)
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"OK")
+            try:
+                app.open_sunshine_webui(None)
+                self._send_json({"success": True})
+                return
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)})
+                return
+        self._send_json({"success": False, "error": "应用未就绪"})
 
     def _handle_install_sunshine(self):
         app = self.app_ref
         if app:
-            app.trigger_install_sunshine(None)
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"OK")
+            try:
+                app.trigger_install_sunshine(None)
+                self._send_json({"success": True})
+                return
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)})
+                return
+        self._send_json({"success": False, "error": "应用未就绪"})
 
     def _handle_run_diagnostics(self):
         app = self.app_ref
         if app:
-            app.show_diagnostics(None)
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"OK")
+            try:
+                app.show_diagnostics(None)
+                self._send_json({"success": True})
+                return
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)})
+                return
+        self._send_json({"success": False, "error": "应用未就绪"})
 
 
 class DashboardManager:

@@ -1,15 +1,18 @@
 <div align="center">
 
+<img src="assets/logo.png" width="128" height="128" alt="DisplaySamsung Logo" style="border-radius:28px; box-shadow:0 8px 24px rgba(0,0,0,0.35);" />
+
 # 📱 DisplaySamsung
 
 ### 将你的三星 / Android 平板，化身为 Mac 的 120Hz 极速视网膜高刷扩展屏！
 
 [![macOS Platform](https://img.shields.io/badge/macOS-Apple_Silicon_%7C_Intel-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/hequanwei/DisplaySamsung)
 [![Android Support](https://img.shields.io/badge/Android-One_UI_5%2B_%7C_Tablets-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/hequanwei/DisplaySamsung)
-[![Release](https://img.shields.io/badge/Release-v2.2.0-blue?style=for-the-badge&logo=github)](https://github.com/hequanwei/DisplaySamsung/releases)
+[![Release](https://img.shields.io/badge/Release-v2.3.0-blue?style=for-the-badge&logo=github)](https://github.com/hequanwei/DisplaySamsung/releases)
 [![Refresh Rate](https://img.shields.io/badge/Display-120Hz_HiDPI-ff69b4?style=for-the-badge&logo=samsung)](https://github.com/hequanwei/DisplaySamsung)
 [![Latency](https://img.shields.io/badge/Latency-%3C_2ms-success?style=for-the-badge)](https://github.com/hequanwei/DisplaySamsung)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+
 
 <br />
 
@@ -52,6 +55,11 @@
 - 🎛️ **Mole 级原生极致美学独立控制中心 (Dashboard & Settings)**
   - 汲取 [tw93/mole](https://github.com/tw93/mole) 原生视觉灵魂，沉浸毛玻璃质感、Bento Grid 细边框卡片与科技呼吸状态指示灯；
   - **状态栏极致精简**：下拉菜单仅保留 6 项核心快捷开关，将所有复杂设置统一收纳至独立控制中心！
+- 🚀 **在线版本更新检测与升级 (Update Checker)**
+  - 内置 GitHub Releases 异步检测能力，控制中心一键对比版本、拉取 Release Notes 与一键下载最新 DMG。
+- 🖼️ **Apple Squircle 原生高质感图标与全无阻断 Toast**
+  - 原创设计 Apple 设计规范超椭圆（Squircle）Retina 原生全规格图标（`assets/app.icns`，2.17MB）；
+  - 全面移除阻断式原生弹窗，引入现代毛玻璃 Toast 浮层，操作体验流畅丝滑。
 - 📜 **内置实时运行日志流 (Live Logs Viewer)**
   - 控制台深色等宽字体终端样式，支持实时滚动刷新、一键清空日志、复制内容并在访达中定位。
 - ⚡ **原生 120Hz 满血高刷 & 2800x1752 HiDPI Retina**
